@@ -1,0 +1,5 @@
+# Bidi: marks, a paired embedding and isolates; no overrides
+left-to-right mark ‎ and right-to-left mark ‏
+paired embedding: ‫عربي‬ done
+isolate: ⁧عربي⁩ done
+first-strong isolate: ⁨عربي⁩ done

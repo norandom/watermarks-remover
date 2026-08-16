@@ -1,0 +1,3 @@
+# CJK: one legal variation selector per ideographic base
+辻︀ 逸︀
+葛󠄀 芦󠄀 邊󠄀

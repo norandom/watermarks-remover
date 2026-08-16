@@ -1,0 +1,8 @@
+# Urdu: ZWNJ inside a compound greeting
+خوش‌آمدید
+# Urdu: ZWNJ before the Urdu full stop
+خوش‌آمدید‌۔
+# Urdu: ZWNJ beside extended Arabic-Indic digits
+صفحہ‌۱۲۳‌ب
+# Urdu: ZWNJ before a line break
+پاکستان‌

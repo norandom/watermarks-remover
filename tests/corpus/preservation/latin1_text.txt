@@ -1,0 +1,4 @@
+# latin-1: these bytes are not valid UTF-8 and must round-trip
+Rédactrice : Édith Pièce
+Naïve façade, Übermut, mañana
+Tarif : 3 50 ¤

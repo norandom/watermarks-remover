@@ -1,0 +1,374 @@
+{
+  "arabic_joiners.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.3",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200C",
+      "U+200D"
+    ],
+    "rule": "A zero-width joiner or non-joiner is orthographic in this script, so it is preserved wherever it sits, including at the end of a value and adjacent to punctuation, digits or a line break; the rule reads the neighbouring base character, never another carrier.",
+    "summary": "Arabic ZWNJ inside a compound name, before punctuation, beside Arabic-Indic digits and before a line break, plus a ZWJ forcing a connected form.",
+    "trailing_newline": true
+  },
+  "bidi_marks_and_embeddings.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.7"
+    ],
+    "protected_codepoints": [
+      "U+200E",
+      "U+200F",
+      "U+202B",
+      "U+202C",
+      "U+2067",
+      "U+2068",
+      "U+2069"
+    ],
+    "rule": "Directional marks and correctly paired embeddings and isolates are preserved by default; only the overrides U+202D and U+202E are removed unconditionally, and neither appears here.",
+    "summary": "Directional marks, one correctly paired embedding and two directional isolates; deliberately no overrides.",
+    "trailing_newline": true
+  },
+  "bom_prefixed.csv": {
+    "encoding": "utf-8-sig",
+    "implemented_by": [
+      "2.2",
+      "2.4"
+    ],
+    "line_endings": "CRLF",
+    "policy": {},
+    "protected_by": [
+      "6.1",
+      "6.5"
+    ],
+    "protected_codepoints": [
+      "U+FEFF"
+    ],
+    "rule": "A byte-order mark at offset zero is a required encoding signal and is preserved unless strip_bom is set; the rule is decided by position, not by format, and only interior occurrences are carriers.",
+    "summary": "Comma-separated values with a UTF-8 byte-order mark and CRLF line endings, as a spreadsheet export produces.",
+    "trailing_newline": true
+  },
+  "cjk_variation_selectors.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "2.3",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+FE00",
+      "U+E0100"
+    ],
+    "rule": "A variation selector following a base it can legally modify is preserved. Only the first selector of a run is legal, which is what separates ideographic variation from byte smuggling on the same bases; each base here carries exactly one.",
+    "summary": "Ideographic bases each carrying exactly one legal variation selector, in standardized and Ideographic Variation Database form.",
+    "trailing_newline": true
+  },
+  "crlf_markdown_frontmatter.md": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.8",
+      "3.1"
+    ],
+    "line_endings": "CRLF",
+    "policy": {},
+    "protected_by": [
+      "1.4",
+      "5.2",
+      "6.1",
+      "6.2",
+      "6.3",
+      "6.4"
+    ],
+    "protected_codepoints": [],
+    "rule": "A file with no invisible carriers and no provenance key is left byte-for-byte identical: CRLF endings stay CRLF and stay uniform, the trailing newline stays, blank lines and indentation stay, and a vendor name in a value does not make its key a provenance field.",
+    "summary": "Mark-free CRLF Markdown with frontmatter, an indented list, an indented block, blank lines, a thematic break and a title whose value merely names two vendors.",
+    "trailing_newline": true
+  },
+  "devanagari_conjuncts.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.3",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200C",
+      "U+200D"
+    ],
+    "rule": "Joiners are orthographic in Devanagari: removing one changes which glyph is rendered, so the joiner is content, not a carrier.",
+    "summary": "Devanagari conjunct control: ZWNJ for an explicit virama, ZWJ for a half form and for the Marathi eyelash reph.",
+    "trailing_newline": true
+  },
+  "emoji_presentation_selectors.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.2"
+    ],
+    "protected_codepoints": [
+      "U+FE0E",
+      "U+FE0F"
+    ],
+    "rule": "A text or emoji variation selector following any base Unicode defines as emoji-presentable is preserved, including bases outside the Miscellaneous Symbols blocks.",
+    "summary": "The five emoji bases whose presentation selector the shipped classifier drops, plus a text-presentation selector.",
+    "trailing_newline": true
+  },
+  "emoji_subdivision_flags.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "2.2"
+    ],
+    "protected_codepoints": [
+      "U+E0062",
+      "U+E0063",
+      "U+E0065",
+      "U+E0067",
+      "U+E006C",
+      "U+E006E",
+      "U+E0073",
+      "U+E0074",
+      "U+E0077",
+      "U+E007F"
+    ],
+    "rule": "Tag-block characters are contraband only outside a complete subdivision-flag sequence; a conforming payload of two to six tag letters between U+1F3F4 and U+E007F is preserved.",
+    "summary": "Complete ISO 3166-2 subdivision flags for Scotland, Wales and England.",
+    "trailing_newline": true
+  },
+  "emoji_zwj_sequences.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.1",
+      "3.2",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200D",
+      "U+FE0F"
+    ],
+    "rule": "A zero-width joiner between two emoji bases is glue that the sequence renders from, and a variation selector after an emoji-presentable base is presentation; the base lookup skips intervening carriers.",
+    "summary": "Emoji joiner sequences: family, profession, a flag with a presentation selector, a skin-tone modifier and a heart.",
+    "trailing_newline": true
+  },
+  "french_typography.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.7"
+    ],
+    "line_endings": "LF",
+    "policy": {
+      "normalize_spaces": false
+    },
+    "protected_by": [
+      "4.4",
+      "4.5"
+    ],
+    "protected_codepoints": [
+      "U+00A0",
+      "U+202F"
+    ],
+    "rule": "Space homoglyphs carrying documented typographic meaning in the surrounding language are left unchanged where space normalisation is disabled for the path. This entry is byte-identical under that policy only: the default policy normalises spaces and is allowed to replace them.",
+    "summary": "French typography using the no-break space and the narrow no-break space inside guillemets, before high punctuation and as a digit group separator.",
+    "trailing_newline": true
+  },
+  "icon_font_private_use.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.5"
+    ],
+    "protected_codepoints": [
+      "U+E0A0",
+      "U+E0B0",
+      "U+E0B2",
+      "U+F07B",
+      "U+F09B",
+      "U+F0001",
+      "U+100001"
+    ],
+    "rule": "Private-use codepoints are preserved under the default policy so that icon-font glyphs in tracked text files survive; only an explicit strip_private_use opts into removing them.",
+    "summary": "Nerd Font icon glyphs in the Basic Multilingual Plane and in both supplementary private-use planes.",
+    "trailing_newline": true
+  },
+  "khmer_zwsp.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.4",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200B"
+    ],
+    "rule": "U+200B between two bases of a script that uses it as its word or line-break separator is orthographic, not a carrier, so it is preserved.",
+    "summary": "Khmer prose using U+200B as its word separator.",
+    "trailing_newline": true
+  },
+  "lao_zwsp.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.4",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200B"
+    ],
+    "rule": "U+200B between two bases of a script that uses it as its word or line-break separator is orthographic, not a carrier, so it is preserved.",
+    "summary": "Lao prose using U+200B as its word separator.",
+    "trailing_newline": true
+  },
+  "latin1_text.txt": {
+    "encoding": "latin-1",
+    "implemented_by": [
+      "3.1"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "6.6"
+    ],
+    "protected_codepoints": [],
+    "rule": "Bytes that cannot be decoded as UTF-8 round-trip unchanged through surrogate escaping, so an undecodable file is never rewritten or mangled.",
+    "summary": "Latin-1 text whose accented bytes and no-break-space byte are not valid UTF-8.",
+    "trailing_newline": true
+  },
+  "myanmar_zwsp.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.4",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200B"
+    ],
+    "rule": "U+200B between two bases of a script that uses it as its word or line-break separator is orthographic, not a carrier, so it is preserved.",
+    "summary": "Myanmar prose using U+200B as its word separator.",
+    "trailing_newline": true
+  },
+  "persian_frontmatter_values.md": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6",
+      "2.8"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.3",
+      "6.4"
+    ],
+    "protected_codepoints": [
+      "U+200C"
+    ],
+    "rule": "A joiner at the end of a text value is preserved, and the indentation and blank lines of a frontmatter block the Cleaner was not asked to touch stay exactly as they are.",
+    "summary": "Markdown frontmatter whose Persian scalar values end with a ZWNJ, including an indented list item.",
+    "trailing_newline": true
+  },
+  "persian_joiners.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6",
+      "3.1"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.3",
+      "3.6",
+      "6.3"
+    ],
+    "protected_codepoints": [
+      "U+200C"
+    ],
+    "rule": "A zero-width joiner or non-joiner is orthographic in this script, so it is preserved wherever it sits, including at the end of a value and adjacent to punctuation, digits or a line break; the rule reads the neighbouring base character, never another carrier. The file also ends without a trailing newline, whose absence is preserved.",
+    "summary": "Persian ZWNJ at every edge position Requirement 3.3 names, ending at end-of-file with no trailing newline.",
+    "trailing_newline": false
+  },
+  "thai_zwsp.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.4",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200B"
+    ],
+    "rule": "U+200B between two bases of a script that uses it as its word or line-break separator is orthographic, not a carrier, so it is preserved.",
+    "summary": "Thai prose using U+200B as its word separator.",
+    "trailing_newline": true
+  },
+  "urdu_joiners.txt": {
+    "encoding": "utf-8",
+    "implemented_by": [
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "protected_by": [
+      "3.3",
+      "3.6"
+    ],
+    "protected_codepoints": [
+      "U+200C"
+    ],
+    "rule": "A zero-width joiner or non-joiner is orthographic in this script, so it is preserved wherever it sits, including at the end of a value and adjacent to punctuation, digits or a line break; the rule reads the neighbouring base character, never another carrier.",
+    "summary": "Urdu ZWNJ inside a compound greeting, before the Urdu full stop, beside extended Arabic-Indic digits and before a line break.",
+    "trailing_newline": true
+  }
+}

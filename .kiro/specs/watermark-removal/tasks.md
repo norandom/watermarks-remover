@@ -38,7 +38,7 @@
     output encoding unchanged.
   - _Boundary: _tables_
 
-- [ ] 1.3 (P) Build the preservation corpus
+- [x] 1.3 (P) Build the preservation corpus
   - Assemble files that must survive cleaning byte-identically: emoji joiner
     sequences and a subdivision flag; Persian, Urdu and Arabic with joiners at
     end-of-value, before punctuation, beside digits and before a newline; Thai,
@@ -360,6 +360,15 @@
 - **1.1** — Test data must never contain a *literal* invisible carrier. This
   repo's own hook would rewrite the test file and silently corrupt the
   constant. Always write carriers as `\uXXXX` escapes.
+- **1.3** — The corpus is byte-exact fixture data and **must** stay excluded
+  from this repo's own hook. Measured: the shipped hook damages 13 of 19
+  preservation entries, including a mark-free CRLF file and a BOM'd CSV.
+  `.pre-commit-hooks.yaml` now carries `exclude: ^tests/corpus/` on both ids,
+  and `.gitattributes` has `tests/corpus/** -text`. Do not weaken either.
+- **1.3** — Each carrier/preservation entry's manifest records the **policy**
+  under which its expectation holds. Tasks 4.2 and 4.3 must read that
+  annotation per entry, not run the whole corpus under defaults —
+  `french_typography.txt` is byte-identical only with `normalize_spaces: false`.
 - **1.2** — Mutation-probe gotcha for reviewers: `frozenset(x)` where `x` is
   already a frozenset returns *the same object* in CPython, so using that as a
   "copy instead of alias" probe wrongly suggests an identity test is vacuous.

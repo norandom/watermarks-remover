@@ -25,6 +25,12 @@
   # Explicit extension list instead of types: [text] — identify does not know
   # .qmd/.qml, so type filtering would silently skip Quarto/Qt files.
   files: \.(md|markdown|mdx|qmd|qml|txt|text|py|js|ts|jsx|tsx|css|json|ya?ml|toml|csv|rs|go|c|h|cpp|hpp|java|rb|sh|sql|xml|cfg|ini|env|tex|bib|rst)$
+  # Test fixtures are byte-exact by definition: a preservation entry proves the
+  # cleaner leaves it alone, and a carrier entry deliberately holds a live
+  # payload. Measured — running this hook over the corpus damages 13 of 19
+  # preservation entries, including a mark-free CRLF file and a BOM'd CSV.
+  # Any adopter with byte-exact fixtures wants the same exclusion.
+  exclude: ^tests/corpus/
 
 - id: wm-hook-check
   name: detect AI provenance marks (read-only)
@@ -33,3 +39,6 @@
   language: python
   stages: [manual]
   files: \.(md|markdown|mdx|qmd|qml|txt|text|py|js|ts|jsx|tsx|css|json|ya?ml|toml|csv|rs|go|c|h|cpp|hpp|java|rb|sh|sql|xml|cfg|ini|env|tex|bib|rst)$
+  # Read-only, so it cannot damage the corpus — but the carrier fixtures hold
+  # deliberate payloads and would be reported as findings on every run.
+  exclude: ^tests/corpus/
