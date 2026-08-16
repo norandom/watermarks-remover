@@ -379,6 +379,67 @@ from flags import valid_flag_tag_indices as _valid_flag_tag_indices  # noqa: E40
 # is a fork, so the fix lives in the source rather than in a wrapper.
 
 
+# Mixed-script confusable detection, after Unicode TR39.
+#
+# A confusable is only evidence in context. Cyrillic "а" in "привет" is just a
+# letter; the same character in "pаypal" is an attack. Reporting every
+# confusable would drown any Cyrillic, Greek or fullwidth document in false
+# positives, which is why detection was originally left switched off entirely
+# -- and why nothing reported the homoglyph in "pаypal.com" either.
+#
+# TR39's discriminator is script mixing *within a single identifier*. That is
+# what is implemented here, at token granularity.
+
+_SCRIPT_RANGES: tuple[tuple[int, int, str], ...] = (
+    (0x0041, 0x005A, "latin"), (0x0061, 0x007A, "latin"),
+    (0x00C0, 0x024F, "latin"),
+    (0x0370, 0x03FF, "greek"), (0x1F00, 0x1FFF, "greek"),
+    (0x0400, 0x04FF, "cyrillic"), (0x0500, 0x052F, "cyrillic"),
+    (0x0530, 0x058F, "armenian"),
+    (0xFF21, 0xFF3A, "fullwidth"), (0xFF41, 0xFF5A, "fullwidth"),
+)
+
+
+def _script_of(cp: int) -> str | None:
+    for lo, hi, name in _SCRIPT_RANGES:
+        if lo <= cp <= hi:
+            return name
+    return None
+
+
+def _is_token_char(ch: str) -> bool:
+    """Identifier-ish: letters, digits, and the joiners a domain or name uses."""
+    return ch.isalnum() or ch in "-_."
+
+
+def _mixed_script_confusable_indices(text: str) -> set[int]:
+    """Indices of confusable characters sitting in a script-mixed token.
+
+    A token whose characters come from more than one script, and which
+    contains at least one character from the confusable table, is reported.
+    Single-script tokens are left alone however exotic their script.
+    """
+    flagged: set[int] = set()
+    start = 0
+    n = len(text)
+    while start < n:
+        if not _is_token_char(text[start]):
+            start += 1
+            continue
+        end = start
+        while end < n and _is_token_char(text[end]):
+            end += 1
+
+        token = text[start:end]
+        scripts = {s for s in (_script_of(ord(c)) for c in token) if s}
+        if len(scripts) > 1:
+            for offset, c in enumerate(token):
+                if ord(c) in LATIN_CONFUSABLES:
+                    flagged.add(start + offset)
+        start = end
+    return flagged
+
+
 def _valid_bidi_embedding_indices(text: str) -> set[int]:
     """Indices belonging to complete LRE/RLE ... PDF pairs, excluding overrides."""
     valid: set[int] = set()
@@ -552,6 +613,14 @@ def inspect_text(
     prev_kept: str | None = None
     valid_flag_tags = _valid_flag_tag_indices(text)
     valid_bidi_embeddings = _valid_bidi_embedding_indices(text)
+    # Inspection is deliberately more sensitive than cleaning. It already
+    # reports bidi and space homoglyphs that the default clean preserves;
+    # confusables were the one class still gated behind a *removal* flag, so
+    # a Cyrillic character in a hostname went unreported as well as unrewritten.
+    # Whether to rewrite a homoglyph is a policy question with a real
+    # false-positive cost on multilingual source. Whether to say one is present
+    # is not.
+    mixed_script = _mixed_script_confusable_indices(text)
     for i, ch in enumerate(text):
         action, out_char, kind = _decide(
             ch,
@@ -561,7 +630,7 @@ def inspect_text(
             valid_flag_tag=i in valid_flag_tags,
             valid_bidi_embedding=i in valid_bidi_embeddings,
             normalize_spaces=True,
-            treat_confusables=aggressive,
+            treat_confusables=aggressive or i in mixed_script,
             strip_emoji_glue=strip_emoji_glue,
             strip_bidi=True,
         )

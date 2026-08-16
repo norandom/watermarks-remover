@@ -189,15 +189,18 @@ TECHNIQUES: tuple[Technique, ...] = (
         text='HOST = "pаypаl.cоm"\n',
         remove=False,
         policy={"aggressive_homoglyphs": True},
-        note="off by default: the false-positive rate on multilingual source "
-             "is unacceptable for an unattended rewrite",
+        note="detected via mixed-script analysis; rewriting stays off by "
+             "default because the false-positive cost on multilingual source "
+             "is unacceptable for an unattended edit",
     ),
     Technique(
         key="fullwidth_homoglyph",
         name="Fullwidth Latin substitution",
         reference="U+FF21-U+FF5A render as wide but read as Latin",
-        payload="3 substitutions",
-        text="ＡＢＣ module\n",
+        payload="2 substitutions",
+        # Mixed within the token, which is what makes it an attack. A wholly
+        # fullwidth token is just fullwidth text and is correctly ignored.
+        text="import Ａuth from './ｍodule'\n",
         remove=False,
         policy={"aggressive_homoglyphs": True},
     ),
