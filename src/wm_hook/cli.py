@@ -61,6 +61,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "core"))
 from common import MAX_INPUT_BYTES, eprint, looks_binary, safe_write_text  # noqa: E402
 from text_unicode import clean_text  # noqa: E402
 
+from wm_hook import signing as _signing  # noqa: E402
 from wm_hook import verdict as _verdict  # noqa: E402
 from wm_hook.discovery import iter_text_files  # noqa: E402
 
@@ -226,6 +227,84 @@ def detect(
     return 1 if hits else 0
 
 
+def _load_key(path: Path | None) -> bytes | None:
+    if path is None:
+        return None
+    try:
+        key = path.read_bytes()
+    except OSError as e:
+        raise SystemExit(f"wm-hook: cannot read key {path}: {e}")
+    if len(key) < 16:
+        raise SystemExit(f"wm-hook: {path} is too short to be a key")
+    return key
+
+
+def sign_files(paths: list[Path], label: str, key: bytes | None) -> int:
+    """Add an invisible label to each file. Exit 2 if any could not be signed."""
+    errors = 0
+    for path in paths:
+        text, why = read_text(path)
+        if text is None:
+            eprint(f"wm-hook: {path}: {why}")
+            errors += 1
+            continue
+        try:
+            signed = _signing.sign(text, label, key)
+        except _signing.SigningError as e:
+            eprint(f"wm-hook: {path}: {e}")
+            errors += 1
+            continue
+        try:
+            safe_write_text(path, signed)
+        except OSError as e:
+            eprint(f"wm-hook: {path}: cannot write: {e}")
+            errors += 1
+            continue
+        added = len(signed) - len(text)
+        print(f"signed  {path}  ({added} invisible characters added)")
+
+    if not errors:
+        if key is None:
+            print(
+                "\nThis is a label, not proof. Anyone who reads it can copy it onto\n"
+                "other text. Pass --key to bind it to this text's content."
+            )
+        else:
+            print("\nBound to the text. Editing the text invalidates the mark.")
+        print(
+            "Any carrier cleaner removes it, including this tool. Do not run\n"
+            "wm-hook without --sign over a signed file, and exclude signed files\n"
+            "from the pre-commit hook."
+        )
+    return 2 if errors else 0
+
+
+def verify_files(paths: list[Path], key: bytes | None) -> int:
+    """Report the mark on each file. Exit 1 if any is missing or invalid."""
+    bad = 0
+    for path in paths:
+        text, why = read_text(path)
+        if text is None:
+            print(f"ERROR    {path}: {why}")
+            bad += 1
+            continue
+        r = _signing.verify(text, key)
+        if r.label is None:
+            print(f"UNSIGNED {path}")
+            bad += 1
+            continue
+        state = {True: "VALID   ", False: "INVALID ", None: "UNKEYED "}[r.valid]
+        print(f"{state} {path}: {r.label!r}")
+        print(f"         {r.detail}")
+        if r.valid is not True:
+            bad += 1
+    print(
+        "\nA missing mark proves nothing: removing one is trivial and leaves no\n"
+        "trace that anything was there."
+    )
+    return 1 if bad else 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
@@ -252,6 +331,24 @@ def main() -> int:
     p.add_argument("-v", "--verbose", action="store_true",
                    help="with --detect, show why each flagged file was flagged")
     p.add_argument(
+        "--sign", metavar="LABEL",
+        help="add LABEL to each file as invisible characters. Without --key "
+             "this is a label anyone can copy, not proof of authorship.",
+    )
+    p.add_argument(
+        "--verify", action="store_true",
+        help="report the invisible label on each file, and whether --key binds it",
+    )
+    p.add_argument(
+        "--key", type=Path, metavar="FILE",
+        help="secret key binding a signature to the text it signs. Create one "
+             "with --keygen.",
+    )
+    p.add_argument(
+        "--keygen", type=Path, metavar="FILE",
+        help="write a new random key to FILE and exit",
+    )
+    p.add_argument(
         "--include-hidden-files", action="store_true",
         help="also scan dot files and dot directories. Off by default: a scan "
              "of a project root otherwise reports on .claude/, .kiro/ and "
@@ -260,10 +357,33 @@ def main() -> int:
     p.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
     args = p.parse_args()
 
+    if args.keygen:
+        # Written before anything is read, so a mistyped path fails cheaply.
+        try:
+            _signing.write_key(args.keygen)
+        except (_signing.SigningError, OSError) as e:
+            raise SystemExit(f"wm-hook: {e}")
+        print(f"wrote a new key to {args.keygen}. Keep it secret: anyone holding")
+        print("it can produce marks indistinguishable from yours.")
+        return 0
+
+    if args.sign and args.verify:
+        raise SystemExit("wm-hook: --sign and --verify are separate operations")
+    if args.detect and (args.sign or args.verify):
+        raise SystemExit("wm-hook: --detect looks for other people's marks; "
+                         "--sign and --verify handle your own")
+
     # A directory becomes its text files. pre-commit always passes an explicit
     # list, so this only ever fires for a human pointing at a project.
     paths = list(iter_text_files(args.paths, include_hidden=args.include_hidden_files))
+    if not paths:
+        eprint("wm-hook: no text files were found; nothing was done")
+        return 2
 
+    if args.sign:
+        return sign_files(paths, args.sign, _load_key(args.key))
+    if args.verify:
+        return verify_files(paths, _load_key(args.key))
     if args.detect:
         return detect(paths, as_json=args.json, verbose=args.verbose)
 
