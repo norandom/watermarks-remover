@@ -1,0 +1,14 @@
+# Consumed by the pre-commit framework via:
+#   - repo: https://github.com/norandom/watermarks-remover
+#     rev: <tag>
+#     hooks:
+#       - id: wm-hook
+# language: python makes pre-commit `pip install .` into an isolated env, so
+# no other tooling is required on the committer's machine.
+- id: wm-hook
+  name: strip AI provenance marks (Layer A + md/qmd frontmatter)
+  entry: wm-hook
+  language: python
+  # Explicit extension list instead of types: [text] — identify does not know
+  # .qmd/.qml, so type filtering would silently skip Quarto/Qt files.
+  files: \.(md|markdown|mdx|qmd|qml|txt|text|py|js|ts|jsx|tsx|css|json|ya?ml|toml|csv|rs|go|c|h|cpp|hpp|java|rb|sh|sql|xml|cfg|ini|env|tex|bib|rst)$

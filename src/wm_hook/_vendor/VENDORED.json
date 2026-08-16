@@ -1,0 +1,12 @@
+{
+  "source": "guillaumemeyer/watermarks-remover service/scripts/ @ pinned ref (byte-exact copies; refresh with refresh.sh)",
+  "upstream_repo": "guillaumemeyer/watermarks-remover",
+  "upstream_ref": "fcebf533583d7a313b348dbe421f3b4b17163b66",
+  "refreshed_at": "2026-08-16T07:52:02+00:00",
+  "sha256": {
+    "common.py": "c156150d35f74f8421b6309ce0b9953fe20223a66f8ef89efb3e7e43e9406b68",
+    "text_unicode.py": "166caa04ab0f9fecc5d83d1931bb6b7213e2e17dedaa02fd6213ca4293640e98",
+    "container_meta.py": "c8507beba9e5c38ce7467f72104bf40e49bc5d89b0508e4f333e39a4baba7c3d",
+    "image_meta.py": "3e222cd1a66fef9b454080e88cf11b04e7c596f83dfb8d970a62a47095386b28"
+  }
+}

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "watermarks-hook"
+version = "0.1.0"
+description = "Pre-commit hook that strips AI provenance marks from text (Layer A Unicode + Markdown/Quarto frontmatter), vendored from watermarks-remover"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[project.scripts]
+wm-hook = "wm_hook.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["wm_hook"]
+
+# The vendored modules are sys.path-imported by cli.py at runtime (kept
+# byte-exact with service/scripts/), not imported as package modules, so they
+# ship as package data.
+[tool.setuptools.package-data]
+wm_hook = ["_vendor/*.py", "_vendor/VENDORED.json"]
