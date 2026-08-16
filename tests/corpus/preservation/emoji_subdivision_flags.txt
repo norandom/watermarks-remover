@@ -1,0 +1,3 @@
+scotland: 🏴󠁧󠁢󠁳󠁣󠁴󠁿
+wales: 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+england: 🏴󠁧󠁢󠁥󠁮󠁧󠁿

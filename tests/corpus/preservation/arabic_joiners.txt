@@ -1,0 +1,10 @@
+# Arabic: ZWNJ inside a compound name
+عبد‌الله
+# Arabic: ZWNJ before punctuation
+عبد‌الله‌،
+# Arabic: ZWNJ beside Arabic-Indic digits
+الصفحة‌١٢٣‌أ
+# Arabic: ZWJ forcing a connected form between letters
+م‍ن
+# Arabic: ZWNJ before a line break
+عبد‌

@@ -1,0 +1,4 @@
+# French typography: the no-break spaces are load-bearing
+« Bonjour ! » dit-elle.
+Il a répondu : « Merci ! »
+Prix : 12 500 €

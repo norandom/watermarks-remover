@@ -4,3 +4,21 @@ __pycache__/
 .venv/
 build/
 dist/
+.pytest_cache/
+
+# Machine-local agent settings. .claude/skills/ IS committed - the kiro
+# workflow is part of the project - but per-machine permission allowlists are
+# personal and would churn between contributors.
+.claude/settings.local.json
+
+# Built documentation. Never commit this: MkDocs Material ships 32 lunr search
+# language packs, several of which contain legitimate invisible characters --
+# the Sanskrit pack carries 23 zero-width non-joiners after Devanagari viramas.
+# This repository's own hook would strip them and silently degrade the search
+# index. Measured, not hypothetical; see docs/reference/breakage.md.
+site/
+
+# uv resolves the dev group on every `uv run`. The project has no runtime
+# dependencies, so a lockfile pins nothing an adopter consumes — it would only
+# churn. Contributors get pytest from [dependency-groups] either way.
+uv.lock

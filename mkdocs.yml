@@ -1,0 +1,67 @@
+site_name: watermarks-remover
+site_description: >-
+  An experiment in measuring how much invisible AI provenance marking is
+  actually present in real codebases, and removing it losslessly where it is.
+site_url: https://norandom.github.io/watermarks-remover/
+repo_url: https://github.com/norandom/watermarks-remover
+repo_name: norandom/watermarks-remover
+edit_uri: ""
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+# Deliberately minimal. Every plugin that rewrites page content is a plugin
+# that could introduce or destroy the exact characters this project studies.
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+nav:
+  - Home: index.md
+  - The experiment:
+      - What we measured: experiment/baseline.md
+      - Method: experiment/method.md
+  - Reference:
+      - Invisible characters: reference/characters.md
+      - Before and after: reference/examples.md
+      - What breaks: reference/breakage.md
+  - Using it:
+      - The hook: usage/hook.md
+      - The survey: usage/survey.md
+  - Limits and disclaimer: disclaimer.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/norandom/watermarks-remover
+
+copyright: >-
+  MIT licensed. Provided without warranty of any kind. Measurements are a
+  dated snapshot, not a standing claim.

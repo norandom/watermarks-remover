@@ -1,0 +1,3 @@
+# Icon font: private-use glyphs from a patched Nerd Font
+branch  separators  github  folder 
+supplementary planes: 󰀁 􀀁

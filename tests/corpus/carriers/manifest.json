@@ -1,0 +1,398 @@
+{
+  "bidi_override_trojan_source.txt": {
+    "carrier_class": "bidi_override",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+202D",
+      "U+202E"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [
+      "U+200E",
+      "U+200F",
+      "U+2067",
+      "U+2069"
+    ],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.4",
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "2.4"
+    ],
+    "residue_protected_by": [
+      "3.7"
+    ],
+    "residue_rule": "Directional marks and a correctly paired isolate are preserved by default, so this file still carries invisible characters after cleaning. Only the two overrides go.",
+    "rule": "A bidirectional override is removed unconditionally: no policy flag and no surrounding context makes U+202D or U+202E legitimate content.",
+    "summary": "A Trojan Source line whose right-to-left override reverses the reading order of a security check, plus a left-to-right override, alongside directional marks and one balanced isolate.",
+    "trailing_newline": true
+  },
+  "bom_interior_smuggling.csv": {
+    "carrier_class": "byte_order_mark",
+    "cleaned_under_default": true,
+    "encoding": "utf-8-sig",
+    "expected_removed_codepoints": [
+      "U+FEFF"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [
+      "U+FEFF"
+    ],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.2",
+      "2.4"
+    ],
+    "line_endings": "CRLF",
+    "policy": {},
+    "removed_by": [
+      "2.1"
+    ],
+    "residue_protected_by": [
+      "6.5"
+    ],
+    "residue_rule": "The mark at offset zero survives under the default policy because of where it sits, not because of the file's format: the classifier is given position, not format, and preserves a leading mark unless strip_bom is set. The same codepoint therefore appears in both lists.",
+    "rule": "The byte-order-mark rule is decided by position, not by format: every occurrence after offset zero is a carrier and is stripped.",
+    "summary": "A comma-separated export whose leading byte-order mark is a real encoding signature and whose interior marks are payload, one opening a field and one splitting a word.",
+    "trailing_newline": true
+  },
+  "bom_signature_only.txt": {
+    "carrier_class": "byte_order_mark",
+    "cleaned_under_default": false,
+    "encoding": "utf-8-sig",
+    "expected_removed_codepoints": [
+      "U+FEFF"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.2",
+      "2.4"
+    ],
+    "line_endings": "LF",
+    "policy": {
+      "strip_bom": true
+    },
+    "removed_by": [
+      "9.1",
+      "9.2"
+    ],
+    "residue_protected_by": [],
+    "residue_rule": "Nothing survives under the annotated policy: strip_bom removes the only carrier in the file.",
+    "rule": "A mark at offset zero is preserved unless strip_bom is set. This entry is a carrier only under that flag; the default policy leaves the file byte-identical.",
+    "summary": "A plain text file whose only invisible character is a byte-order mark at offset zero, in a format that does not require one.",
+    "trailing_newline": true
+  },
+  "frontmatter_keys_concealed.md": {
+    "carrier_class": "provenance_key",
+    "cleaned_under_default": true,
+    "encoding": "utf-8-sig",
+    "expected_removed_codepoints": [
+      "U+200B",
+      "U+200C"
+    ],
+    "expected_removed_keys": [
+      "ai-generated",
+      "generator",
+      "model"
+    ],
+    "expected_residue_codepoints": [
+      "U+FEFF"
+    ],
+    "expected_residue_keys": [
+      "tags",
+      "title"
+    ],
+    "implemented_by": [
+      "2.4",
+      "2.8",
+      "3.1"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "5.1",
+      "5.3",
+      "5.6",
+      "7.3"
+    ],
+    "residue_protected_by": [
+      "5.2",
+      "6.5"
+    ],
+    "residue_rule": "The byte-order mark at offset zero stays, and so do the two keys that are not provenance fields \u2014 title merely names a vendor in its value, and tags is an ordinary field.",
+    "rule": "Concealment does not buy a pass: the key pattern tolerates a leading run of invisible characters and the frontmatter is located through the mark, so both the carriers and the keys go in the same invocation.",
+    "summary": "Markdown frontmatter hidden behind a byte-order mark, with a generator key split by a zero-width space, an ai-generated key opened by a zero-width non-joiner, and a model key corroborated by its value.",
+    "trailing_newline": true
+  },
+  "frontmatter_provenance_keys.md": {
+    "carrier_class": "provenance_key",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [],
+    "expected_removed_keys": [
+      "created_with",
+      "generator"
+    ],
+    "expected_residue_codepoints": [],
+    "expected_residue_keys": [
+      "date",
+      "model",
+      "title"
+    ],
+    "implemented_by": [
+      "2.8",
+      "3.1"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "5.1"
+    ],
+    "residue_protected_by": [
+      "5.2",
+      "5.3"
+    ],
+    "residue_rule": "This entry carries no invisible characters at all, and three keys survive: a value naming a vendor never drops its key, and an ambiguous name needs a corroborating value it does not have here.",
+    "rule": "A key whose name is unconditionally provenance-bearing is removed together with its nested block and its list continuation lines.",
+    "summary": "Plain Markdown frontmatter carrying a generator key with a nested block and a created_with key with list items, beside a title that names two vendors and an ambiguous model key with an ordinary value.",
+    "trailing_newline": true
+  },
+  "joiners_between_ascii_digits.txt": {
+    "carrier_class": "zero_width",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+200C",
+      "U+200D"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [
+      "U+FE0F"
+    ],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "2.1"
+    ],
+    "residue_protected_by": [
+      "3.2"
+    ],
+    "residue_rule": "The presentation selectors inside the keycap sequences are legal: they follow a base that a keycap makes emoji-presentable, so they survive even though the same file loses every joiner.",
+    "rule": "An ASCII digit, hash or asterisk is an emoji base only inside a genuine keycap sequence, so a joiner between digits is glue for nothing and is removed.",
+    "summary": "Zero-width joiners and non-joiners smuggled between ASCII digits, beside three genuine keycap sequences and one joiner sitting immediately after a keycap.",
+    "trailing_newline": true
+  },
+  "orphan_variation_selectors.txt": {
+    "carrier_class": "variation_selector",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+FE0E",
+      "U+FE0F",
+      "U+E0100"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.4",
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "2.3"
+    ],
+    "residue_protected_by": [],
+    "residue_rule": "Nothing survives: not one selector in this entry has a base that could carry it.",
+    "rule": "A variation selector that does not follow a base it can legally modify is removed, whatever the selector and whatever precedes it.",
+    "summary": "Variation selectors after a Latin letter, after a space, at the start of a line, after a digit that opens no keycap, and an ideographic selector with nothing before it.",
+    "trailing_newline": true
+  },
+  "private_use_floating.txt": {
+    "carrier_class": "private_use",
+    "cleaned_under_default": false,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+E000",
+      "U+E001",
+      "U+F8FF",
+      "U+F0000",
+      "U+10FFFD"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.4",
+      "2.6"
+    ],
+    "line_endings": "LF",
+    "policy": {
+      "strip_private_use": true
+    },
+    "removed_by": [
+      "9.1",
+      "9.2"
+    ],
+    "residue_protected_by": [],
+    "residue_rule": "Nothing survives under the annotated policy. Under the default policy the whole file survives instead: Requirement 3.5 preserves private-use characters so that icon-font glyphs are not destroyed.",
+    "rule": "Private-use codepoints are removed only where strip_private_use opts into it. Under that policy every one of them is contraband, since none of them is standing in for a glyph the surrounding text needs.",
+    "summary": "Free-floating private-use codepoints in prose with no icon-font context, spanning the Basic Multilingual Plane and both supplementary private-use planes.",
+    "trailing_newline": true
+  },
+  "tag_block_bare_payload.txt": {
+    "carrier_class": "tag_block",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+E0020",
+      "U+E0032",
+      "U+E0034",
+      "U+E0064",
+      "U+E0065",
+      "U+E0068",
+      "U+E0069",
+      "U+E006E",
+      "U+E007F"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.4",
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "2.2"
+    ],
+    "residue_protected_by": [],
+    "residue_rule": "Nothing survives: every tag character here is free-floating.",
+    "rule": "A tag-block character outside a complete subdivision-flag sequence is contraband, and a file with no flag base has no complete sequence to be inside.",
+    "summary": "Unicode Tag-block characters with no flag base anywhere in the file: a tag-letter payload, tag digits, a tag space and a lone cancel tag.",
+    "trailing_newline": true
+  },
+  "tag_block_behind_flag.txt": {
+    "carrier_class": "tag_block",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+E0062",
+      "U+E0063",
+      "U+E0067",
+      "U+E0068",
+      "U+E0069",
+      "U+E0073",
+      "U+E0074",
+      "U+E0078",
+      "U+E0079",
+      "U+E007F"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [
+      "U+E0062",
+      "U+E0063",
+      "U+E0067",
+      "U+E0073",
+      "U+E0074",
+      "U+E007F"
+    ],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "2.2"
+    ],
+    "residue_protected_by": [
+      "2.2"
+    ],
+    "residue_rule": "The conforming Scotland flag keeps all six of its tag characters. Five of those codepoints are also smuggled elsewhere in the same file, which is why they appear in both lists: the verdict is per position, not per codepoint.",
+    "rule": "A subdivision payload is bounded: two to six tag letters from the ISO 3166-2 alphabet, terminated. Longer, empty or trailing runs are contraband even though a flag base precedes them.",
+    "summary": "Tag payloads hidden behind a waving black flag: one over-long payload, one conforming subdivision flag followed by extra tag characters past its terminator, and one flag with an empty payload.",
+    "trailing_newline": true
+  },
+  "variation_selector_smuggling.txt": {
+    "carrier_class": "variation_selector",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+FE00",
+      "U+FE01",
+      "U+FE02",
+      "U+E0101",
+      "U+E0102",
+      "U+E0103",
+      "U+E0104",
+      "U+E0105"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [
+      "U+FE00",
+      "U+FE01",
+      "U+E0100"
+    ],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.5"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "2.3",
+      "2.6"
+    ],
+    "residue_protected_by": [
+      "2.3"
+    ],
+    "residue_rule": "Each run legitimately retains its first selector: the base is a unified ideograph that can carry one. This entry is therefore still full of variation selectors after cleaning, and three of the four codepoints it retains are also removed elsewhere in the same file.",
+    "rule": "Only the first selector of a run follows a base \u2014 every later one follows another selector, so under the selector-run rule the rest of each run is byte smuggling and is removed in one pass.",
+    "summary": "Four ideographic bases, each followed by a run of variation selectors rather than the single selector variation calls for; one run is six selectors long.",
+    "trailing_newline": true
+  },
+  "zero_width_binary_payload.txt": {
+    "carrier_class": "zero_width",
+    "cleaned_under_default": true,
+    "encoding": "utf-8",
+    "expected_removed_codepoints": [
+      "U+200B",
+      "U+200C",
+      "U+200D",
+      "U+2060",
+      "U+FEFF"
+    ],
+    "expected_removed_keys": [],
+    "expected_residue_codepoints": [],
+    "expected_residue_keys": [],
+    "implemented_by": [
+      "2.4"
+    ],
+    "line_endings": "LF",
+    "policy": {},
+    "removed_by": [
+      "2.1",
+      "2.5",
+      "2.6"
+    ],
+    "residue_protected_by": [],
+    "residue_rule": "Nothing survives: this entry is pure payload, and its one byte-order mark is interior rather than a signature.",
+    "rule": "Each of the five zero-width codepoints Requirement 2.1 names is here in a position where nothing protects it, and the catch-all covers the word joiner, which is on no preservation allowlist. Whole runs go in a single pass.",
+    "summary": "An eight-character zero-width bit payload after a sentence, a joiner between Latin letters, a run of three word joiners and an interior byte-order mark.",
+    "trailing_newline": true
+  }
+}

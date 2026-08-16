@@ -1,0 +1,8 @@
+# Devanagari: ZWNJ forces an explicit virama
+क्‌ष
+# Devanagari: ZWJ forces a half form
+क्‍ष
+# Marathi: the eyelash reph needs its ZWJ
+र्‍य
+# The same conjunct with no joiner at all
+हिन्दी

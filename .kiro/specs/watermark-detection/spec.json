@@ -1,0 +1,22 @@
+{
+  "feature_name": "watermark-detection",
+  "created_at": "2026-08-16T08:22:51Z",
+  "updated_at": "2026-08-16T09:26:00Z",
+  "language": "en",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}

@@ -1,0 +1,6 @@
+information: ℹ️
+double exclamation: ‼️
+exclamation question: ⁉️
+up-right arrow: ⤴️
+down-right arrow: ⤵️
+airplane, text presentation: ✈︎

@@ -1,0 +1,4 @@
+# Tag smuggling behind a flag emoji
+over-long payload: 🏴󠁧󠁢󠁳󠁣󠁴󠁧󠁢󠁳󠁣󠁴󠁸󠁹󠁿
+conforming flag, trailing payload: 🏴󠁧󠁢󠁳󠁣󠁴󠁿󠁨󠁩
+empty payload: 🏴󠁿

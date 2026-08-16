@@ -12,6 +12,12 @@ license = { text = "MIT" }
 [project.scripts]
 wm-hook = "wm_hook.cli:main"
 
+# Dev-only. The shipped hook stays stdlib-only (steering/tech.md): a PEP 735
+# group is not a distribution extra, so nothing here can reach an adopter's
+# environment. `uv run` installs it by default.
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 packages = ["wm_hook"]
@@ -21,3 +27,13 @@ packages = ["wm_hook"]
 # ship as package data.
 [tool.setuptools.package-data]
 wm_hook = ["_vendor/*.py", "_vendor/VENDORED.json"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+# src/ on the path so the suite tests the working tree rather than whatever
+# happens to be installed, and so a test may import an owned module without
+# going through the console-script entry point.
+pythonpath = ["src"]
+addopts = "-ra --strict-markers --strict-config"
+xfail_strict = true

@@ -1,0 +1,84 @@
+name: docs
+
+# Publishes the MkDocs site to GitHub Pages.
+#
+# Uses the Pages-native artifact flow rather than `mkdocs gh-deploy`, so no
+# gh-pages branch exists and the built site is never committed. That matters
+# here beyond tidiness: MkDocs Material ships 32 lunr search language packs,
+# and several carry legitimate invisible characters -- the Sanskrit pack has 23
+# zero-width non-joiners after Devanagari viramas. Committing `site/` would put
+# them in reach of this repository's own pre-commit hook, which strips them and
+# silently degrades the search index.
+#
+# Repository setting required once: Settings -> Pages -> Source -> GitHub Actions.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. Do not cancel a running deploy: a half-published
+# site is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install documentation dependencies
+        # Pinned deliberately. MkDocs 2.0 removes the plugin system and the
+        # theming system with no migration path, so an unpinned install would
+        # break this build without warning.
+        run: pip install "mkdocs-material==9.*"
+
+      - name: Build
+        # --strict fails on a broken internal link or an unrecognised config
+        # key. A docs site that silently drops a page is not worth publishing.
+        run: mkdocs build --strict
+
+      - name: Verify the build did not mangle the corpus
+        # The docs quote invisible characters as evidence. If the build were to
+        # normalise them away, the examples would quietly become wrong.
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+          bad = []
+          for p in pathlib.Path("site").rglob("*.html"):
+              t = p.read_text(encoding="utf-8", errors="replace")
+              if "U+200B" in t or "U+FE0F" in t:
+                  bad.append(p.name)
+          print(f"pages citing codepoints by name: {len(bad)}")
+          sys.exit(0 if bad else 1)
+          PY
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

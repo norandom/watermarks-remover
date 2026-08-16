@@ -1,0 +1,186 @@
+# watermarks-remover
+
+An experiment in measuring how much invisible AI provenance marking is actually
+present in real codebases, and removing it losslessly where it is.
+
+**Documentation: <https://norandom.github.io/watermarks-remover/>**
+
+> **Baseline measured 2026-08-16.** Provided without warranty of any kind. This
+> is a measurement experiment, not a tool for passing AI-generated work off as
+> human. See [Limits and disclaimer](docs/disclaimer.md).
+
+---
+
+## The result so far
+
+Across 11 repositories and 1,268 text files on one workstation:
+
+| | |
+| --- | --- |
+| Private-use codepoints found | **0** |
+| Watermark candidates in a Codex-authored repo | **0** of 703 files |
+| Watermark candidates in a Claude-authored repo | **0** of 195 files |
+| Invisible characters that turned out to be legitimate | **100%** |
+
+The hypothesis that started this was that coding agents hide payloads in
+private-use or unassigned Unicode space. In this corpus they do not. Every
+invisible character found was doing a job: emoji presentation, script
+orthography, or an encoding signature.
+
+That negative result is the most useful thing here.
+
+---
+
+## Before and after
+
+Invisible characters shown as `〈U+XXXX〉`. They are not visible in the
+originals, which is the whole problem.
+
+### Zero-width binary payload
+
+```text
+before  The release ships on Tuesday.〈U+200B〉〈U+200C〉〈U+200B〉〈U+200B〉〈U+200C〉〈U+200C〉〈U+200B〉〈U+200C〉
+after   The release ships on Tuesday.
+```
+
+`54 bytes -> 30, removed=8.` Two codepoints, one bit each: one byte of payload.
+
+### Tag-block smuggling
+
+`U+E0000`–`U+E007F` mirrors ASCII invisibly.
+
+```text
+before  Shipped today.〈U+E0067〉〈U+E0065〉〈U+E006E〉〈U+E003D〉〈U+E0032〉〈U+E0030〉〈U+E0032〉〈U+E0036〉
+after   Shipped today.
+```
+
+The payload decodes to `gen=2026`.
+
+### AI frontmatter
+
+```diff
+  ---
+  title: Release notes
+- generator: claude-opus-4
+  author: Marius
+  ---
+```
+
+### And what it gets wrong
+
+Real Sanskrit, in a third-party stemmer checked into a real repository:
+
+```text
+before  तथा अयम्〈U+200C〉 एकम्〈U+200C〉 इत्यस्मिन्〈U+200C〉
+after   तथा अयम् एकम् इत्यस्मिन्
+```
+
+Those zero-width non-joiners follow a Devanagari virama. They force the
+explicit halant form instead of a conjunct ligature. They are orthography, and
+they are also the tokens a search index was built against. Nothing errors;
+search quality silently degrades.
+
+Full account: [What breaks](docs/reference/breakage.md).
+
+---
+
+## What the characters indicate
+
+Presence alone indicates nothing. **Position and context carry the signal.**
+
+| Signal | Weak evidence | Strong evidence |
+| --- | --- | --- |
+| Zero-width | after a Thai or Devanagari base | run between Latin letters |
+| Variation selector | one after an emoji or ideograph | run on a single base |
+| Tag characters | inside a short flag sequence | anywhere else |
+| Private use | beside CJK, or a terminal config | in ordinary English prose |
+| Bidi | marks in right-to-left text | override inside source code |
+| Space homoglyph | French or CJK typography | alternating with plain spaces |
+
+Everything in the weak column appeared in the baseline. Nothing in the strong
+column did.
+
+Not evidence of anything: em dashes, curly quotes, emoji, byte-order marks.
+
+Catalogue: [Invisible characters](docs/reference/characters.md).
+
+---
+
+## The three channels
+
+| Channel | Carrier | Removal | Here |
+| --- | --- | --- | --- |
+| **A. Format** | codepoints that render as nothing | lossless | yes |
+| **B. Statistical** | which words the model chose | needs paraphrase | **never** |
+| **C. Declared metadata** | a field that says so | delete the field | frontmatter, containers |
+
+Channel B is permanently out of scope here. Removing a statistical watermark
+means running a paraphrase model over your prose and accepting what comes back.
+That has no place in a commit hook.
+
+Channel B *detection* does exist upstream, via a
+[MarkLLM](https://github.com/THU-BPM/MarkLLM) harness — but only against the
+same scheme config and keys used at generation, so it is a research instrument
+rather than a general detector. Nothing here invokes it.
+
+---
+
+## Usage
+
+### Survey a tree
+
+```bash
+python scripts/wm-survey.py /path/to/repo
+python scripts/wm-survey.py . --exclude tests/corpus/ --json
+```
+
+Reports carriers found, carriers explained as legitimate, and the unexplained
+residual, separately. It never presents the first as a detection rate — on the
+Codex repo that would claim 0.43% where the honest answer is 0%.
+
+Also attributes authorship from **overt** evidence: config directories and
+commit trailers. Both are removable with `rm -rf` and a rebase. There is no
+covert channel to fall back on.
+
+### The pre-commit hook
+
+```yaml
+repos:
+  - repo: https://github.com/norandom/watermarks-remover
+    rev: <tag>
+    hooks:
+      - id: wm-hook              # rewrites files
+        exclude: '^(site/|vendor/|locales/)'
+      - id: wm-hook-check        # manual stage, reports only
+```
+
+Run `pre-commit run --all-files` once and read the diff before trusting it.
+Place it after anything that writes text and before anything that formats it.
+
+Details: [The hook](docs/usage/hook.md).
+
+---
+
+## Status
+
+Under active development against specifications in `.kiro/`. The shipped hook
+has documented defects that corrupt Devanagari, CJK typography and YAML
+structure. Fixes are specified and partly implemented.
+
+On one real repository, the removal pass removed **zero** watermarks, corrupted
+one third-party library, and churned six already-clean files. That measurement
+is in [What we measured](docs/experiment/baseline.md).
+
+---
+
+## Provenance
+
+The cleaning logic is vendored byte-exact from
+[`guillaumemeyer/watermarks-remover`](https://github.com/guillaumemeyer/watermarks-remover),
+pinned by commit SHA with a SHA-256 per file in `_vendor/VENDORED.json`. Never
+edit `_vendor/` in place; use `refresh.sh`.
+
+## License
+
+MIT. See [LICENSE](LICENSE). Provided without warranty of any kind. The
+vendored files carry upstream's licensing.

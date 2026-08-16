@@ -1,0 +1,10 @@
+# Persian: ZWNJ inside a compound verb
+می‌رود
+# Persian: ZWNJ before punctuation
+نمی‌خواهم‌؟
+# Persian: ZWNJ beside Persian digits
+۱۴۰۳‌ش
+# Persian: ZWNJ before a line break
+کتاب‌ها‌
+# Persian: ZWNJ at end of file, with no trailing newline
+می‌رود‌
