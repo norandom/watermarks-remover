@@ -23,7 +23,7 @@
     enumeration helper.
   - _Boundary: tests/conftest.py_
 
-- [ ] 1.2 Provide constants-only access to the vendored tables
+- [x] 1.2 Provide constants-only access to the vendored tables
   - The vendored modules import each other by bare name and are currently
     reachable only through a path insertion performed inside the command-line
     entry point; owned modules and tests must not depend on that entry point.
@@ -122,6 +122,10 @@
     the reason a rule fired or declined.
   - Consume the vendored codepoint tables as data through the shim; do not
     import or call the vendored decision function in production code.
+  - Lock the "only data crosses this boundary" invariant with a test: assert no
+    entry the shim exports is callable, and that the vendored decision-function
+    names are absent from it. Nothing currently prevents a later task from
+    re-exporting one, and tasks 2.4 and 3.1 depend on that invariant holding.
   - Evaluate every context-dependent rule against the previous surviving **base**
     rather than the raw previous character, so a run of carriers cannot mask
     itself and every member of the run is removed.
@@ -356,6 +360,13 @@
 - **1.1** — Test data must never contain a *literal* invisible carrier. This
   repo's own hook would rewrite the test file and silently corrupt the
   constant. Always write carriers as `\uXXXX` escapes.
+- **1.2** — Mutation-probe gotcha for reviewers: `frozenset(x)` where `x` is
+  already a frozenset returns *the same object* in CPython, so using that as a
+  "copy instead of alias" probe wrongly suggests an identity test is vacuous.
+  Use `dict(...)` or `frozenset(set(...))` instead.
+- **1.2** — `cli.py`'s `sys.path` insertion is unconditional, so importing
+  `_tables` before `cli` leaves two identical `_vendor` entries. Harmless, and
+  task 3.3 removes it.
 - **1.1** — `POLICY_FIELD_DEFAULTS` in `tests/conftest.py` restates
   `CleanPolicy`'s fields and defaults. **Task 2.1 must add the drift assertion**
   against the real value object; it belongs in 2.1's boundary, not the harness.

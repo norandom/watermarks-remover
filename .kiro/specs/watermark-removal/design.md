@@ -123,9 +123,9 @@ flowchart TB
     end
 
     subgraph vendored["_vendor/ — byte-exact, read-only"]
-        tables["text_unicode.py<br/>codepoint TABLES"]
-        keys["container_meta.py<br/>AI key tables"]
-        common["common.py<br/>looks_binary, size caps"]
+        tables["text_unicode.py<br/>codepoint TABLES<br/>(standalone, inert)"]
+        keys["container_meta.py<br/>AI key tables<br/>SIDE-EFFECTING"]
+        common["common.py<br/>looks_binary, size caps<br/>SIDE-EFFECTING"]
     end
 
     cli --> clean
@@ -135,9 +135,8 @@ flowchart TB
     clean --> atomic
     clean --> policy
     classify --> tablesmod
-    fm --> tablesmod
     tablesmod -. constants only .-> tables
-    tablesmod -. constants only .-> keys
+    fm -. re-declares, does NOT import .-x keys
     clean --> common
 
     style vendored fill:#2d2d2d,stroke:#888,color:#eee
@@ -182,7 +181,8 @@ flowchart TB
 src/wm_hook/
 ├── cli.py              # MODIFIED: orchestration only; delegates to clean.py
 ├── _tables.py          # NEW: the ONLY module that reaches into _vendor/;
-│                       #      re-exports codepoint and key tables as constants
+│                       #      re-exports codepoint tables as constants.
+│                       #      NOT the key tables — see the import-cost table
 ├── policy.py           # NEW: CleanPolicy value object + defaults
 ├── regions.py          # NEW: segment a document into typed regions
 ├── classify.py         # NEW: the single decision function (owned)
