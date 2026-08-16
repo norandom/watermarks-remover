@@ -1,0 +1,2 @@
+﻿A plain text file whose only invisible character is the leading mark.
+Nothing else here is a carrier, so the default policy leaves it alone.

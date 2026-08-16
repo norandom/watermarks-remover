@@ -1,0 +1,4 @@
+# Tag-block characters with no flag base anywhere in this file
+Ordinary sentence.󠁨󠁩󠁤󠁤󠁥󠁮
+Tag digits and a tag space carry bytes too:󠀴󠀲󠀠
+A lone cancel tag terminates nothing:󠁿

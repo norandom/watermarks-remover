@@ -1,0 +1,4 @@
+# Trojan Source: the overrides are contraband, the marks are not
+if (level != "admin") { // ‮{ return; ‭
+left-to-right mark ‎ and right-to-left mark ‏ stay
+a balanced isolate: ⁧عربي⁩ done

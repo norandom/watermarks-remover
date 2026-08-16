@@ -1,0 +1,7 @@
+# Variation selectors with no base they can legally modify
+after a latin letter: a️
+after a space: ︎now
+at the start of a line:
+️leading
+after a digit outside a keycap: 7️
+󠄀and an ideographic selector with nothing before it

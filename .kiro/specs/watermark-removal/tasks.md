@@ -55,7 +55,7 @@
   - _Boundary: tests/corpus/preservation_
   - _Depends: 1.1_
 
-- [ ] 1.4 (P) Build the carrier corpus
+- [x] 1.4 (P) Build the carrier corpus
   - Assemble files that must be cleaned: zero-width binary payloads; tag-block
     smuggling both bare and hidden behind a flag emoji; variation-selector byte
     smuggling on ideographic bases; joiners between ASCII digits; directional
@@ -360,6 +360,15 @@
 - **1.1** — Test data must never contain a *literal* invisible carrier. This
   repo's own hook would rewrite the test file and silently corrupt the
   constant. Always write carriers as `\uXXXX` escapes.
+- **1.4** — `tests/test_corpus_carriers.py` contains a *model* of the
+  documented classification rules (`_is_preserved`, `_dropped_keys`), written
+  because the real classifier does not exist until 2.4–2.8. **Task 4.3 must
+  read the manifest annotations, not this model** — otherwise a divergence
+  between the shipped classifier and the spec would be masked. Its
+  non-tautology was established by running it against the separately-authored
+  preservation corpus, where it reproduced all 18 declared protected-codepoint
+  sets exactly. When 2.4–2.8 land, consider deleting the model in favour of the
+  real classifier.
 - **1.3** — The corpus is byte-exact fixture data and **must** stay excluded
   from this repo's own hook. Measured: the shipped hook damages 13 of 19
   preservation entries, including a mark-free CRLF file and a BOM'd CSV.

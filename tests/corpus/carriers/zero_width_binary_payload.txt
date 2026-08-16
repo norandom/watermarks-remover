@@ -1,0 +1,5 @@
+# A zero-width binary payload smuggled into ordinary prose
+Ship it on Friday.​‌​​‌‌​‌
+A joiner between Latin letters is not glue: hid‍den.
+Word joiners run in threes:⁠⁠⁠
+An interior byte-order mark is a carrier:﻿done.

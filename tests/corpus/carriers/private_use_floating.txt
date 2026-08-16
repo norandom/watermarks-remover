@@ -1,0 +1,3 @@
+# Free-floating private-use codepoints, with no icon-font context
+The build tag is  and the marker is .
+Supplementary planes carry payload too: 󰀀 􏿽
