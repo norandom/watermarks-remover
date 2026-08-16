@@ -80,8 +80,18 @@ def files_touched(repo: Path) -> dict[str, set[str]]:
 
 
 def prose_of(subject: str, body: str) -> str:
+    """Subject plus body, with trailer lines removed and nothing else.
+
+    Blank lines are PRESERVED. An earlier version dropped them, which made
+    every message in this corpus blank-line-free while the human corpus kept
+    its paragraph breaks. A mechanical-feature study then reported blank-line
+    structure as the single most discriminative signal at AUC 0.011 -- an
+    artifact of two loaders disagreeing, not a property of any author.
+
+    Any preprocessing applied to one corpus must be applied to the other.
+    """
     lines = [subject] + [
-        l for l in body.splitlines() if l.strip() and not TRAILER.match(l.strip())
+        l for l in body.splitlines() if not TRAILER.match(l.strip())
     ]
     return "\n".join(lines).strip()
 
