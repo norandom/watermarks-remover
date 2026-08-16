@@ -22,3 +22,7 @@ site/
 # dependencies, so a lockfile pins nothing an adopter consumes — it would only
 # churn. Contributors get pytest from [dependency-groups] either way.
 uv.lock
+
+# Research corpus materialised on demand. git/git messages are GPLv2 and
+# belong to their authors; only the derived measurements are committed.
+research/corpus/derived/
