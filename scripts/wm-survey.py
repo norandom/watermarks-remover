@@ -40,6 +40,9 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from payload import carrier_signature, extract  # noqa: E402
+
 TEXT_EXTS = {
     ".md", ".markdown", ".mdx", ".qmd", ".rmd", ".txt", ".rst", ".tex",
     ".py", ".ps1", ".psm1", ".psd1", ".sh", ".bash", ".zsh",
@@ -198,6 +201,8 @@ class FileResult:
     explained: int = 0
     by_class: collections.Counter = field(default_factory=collections.Counter)
     unexplained_detail: list = field(default_factory=list)
+    payloads: list = field(default_factory=list)
+    signature: dict = field(default_factory=dict)
 
     @property
     def unexplained(self) -> int:
@@ -213,6 +218,8 @@ def scan_file(path: Path, root: Path) -> FileResult | None:
     except (OSError, UnicodeDecodeError):
         return None
     res = FileResult(path=str(path.relative_to(root)).replace("\\", "/"))
+    res.payloads = [p.to_dict() for p in extract(text)]
+    res.signature = carrier_signature(text)
     for i, ch in enumerate(text):
         kind = carrier_class(ord(ch))
         if not kind:
@@ -254,13 +261,27 @@ CHANNELS = {
         "applicable_when": "always; every file is scannable",
         "status": "operational",
     },
+    "payload": {
+        "name": "Payload decoding - what a carrier actually says",
+        "detects": "tag-block ASCII, variation-selector bytes, zero-width bit "
+                   "streams, private-use runs",
+        "blind_to": "encrypted or compressed payloads, and any scheme whose "
+                    "encoding is not one of the four published ones",
+        "applicable_when": "a carrier is present at all",
+        "status": "operational",
+        "why": "This is the only attribution that is evidence rather than "
+               "inference. A payload reading gen=claude-opus-4 names its "
+               "producer outright; a style score never can.",
+    },
     "metadata": {
         "name": "Channel C - declared provenance metadata",
-        "detects": "AI generator keys in YAML frontmatter",
-        "blind_to": "container metadata in PDF, DOCX, ODT, SVG and images, "
-                    "which this tool does not open",
-        "applicable_when": "markdown and Quarto files with frontmatter",
-        "status": "partial",
+        "detects": "nothing",
+        "blind_to": "everything in this channel",
+        "applicable_when": "never; removed from scope",
+        "status": "unavailable",
+        "why": "Frontmatter keys and container metadata are a declared field, "
+               "not hidden material in text. Out of scope; see "
+               ".kiro/steering/scope.md.",
     },
     "statistical": {
         "name": "Channel B - statistical token-sampling watermarks",
@@ -295,7 +316,8 @@ def applicability(rep: dict) -> dict:
     scanned = rep["files_scanned"]
     channels = {k: dict(v) for k, v in CHANNELS.items()}
     channels["layer_a"]["files_covered"] = scanned
-    channels["metadata"]["files_covered"] = rep.get("frontmatter_files", 0)
+    channels["payload"]["files_covered"] = len(rep.get("payloads", []))
+    channels["metadata"]["files_covered"] = 0
     channels["statistical"]["files_covered"] = 0
     channels["stylometric"]["files_covered"] = 0
 
@@ -392,9 +414,12 @@ def survey(root: Path, exclude: tuple[str, ...] = ()) -> dict:
             {"path": f.path, "count": f.unexplained, "detail": f.unexplained_detail[:5]}
             for f in sorted(with_unexplained, key=lambda x: -x.unexplained)[:20]
         ],
-        "frontmatter_files": sum(
-            1 for f in files if f.path.lower().endswith(
-                (".md", ".markdown", ".mdx", ".qmd"))
+        "payloads": [
+            {"path": f.path, "payloads": f.payloads} for f in files if f.payloads
+        ],
+        "carrier_signature": dict(
+            sum((collections.Counter(f.signature) for f in files),
+                collections.Counter()).most_common()
         ),
         "attribution": attribute(root),
     }
@@ -422,6 +447,21 @@ def render(rep: dict) -> None:
             print(f"    {f['path']}  x{f['count']}")
             for d in f["detail"]:
                 print(f"        @{d['offset']:<7} {d['codepoint']} {d['name']} [{d['class']}]")
+    if rep.get("payloads"):
+        print("\n  DECODED PAYLOADS:")
+        for entry in rep["payloads"]:
+            print(f"    {entry['path']}")
+            for p in entry["payloads"]:
+                print(f"      [{p['confidence']:<11}] {p['scheme']} @{p['offset']}")
+                print(f"        {p['decoded']!r}")
+                if p["identifiers"]:
+                    print(f"        identifies: {', '.join(p['identifiers'])}")
+
+    if rep.get("carrier_signature"):
+        print("\n  carrier signature (classes a producer reached for):")
+        for k, v in sorted(rep["carrier_signature"].items(), key=lambda kv: -kv[1]):
+            print(f"    {k:<22} {v}")
+
     ap = rep["applicability"]
     print("\n  what this run could detect:")
     for key, ch in ap["channels"].items():
