@@ -4,3 +4,9 @@ __pycache__/
 .venv/
 build/
 dist/
+.pytest_cache/
+
+# uv resolves the dev group on every `uv run`. The project has no runtime
+# dependencies, so a lockfile pins nothing an adopter consumes — it would only
+# churn. Contributors get pytest from [dependency-groups] either way.
+uv.lock
