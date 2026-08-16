@@ -55,9 +55,30 @@ def surviving(sent: list[int], got: list[int]) -> int:
     return n
 
 
-def measure(host: str, policy: dict | None = None) -> list[dict]:
+def _with_bounded_flags():
+    """Patch the vendored flag predicate with the owned bounded one.
+
+    The cleaner is byte-exact vendored code, so the fix cannot be applied in
+    place. Rebinding the module attribute for the duration of a measurement is
+    how we show the bound closes the channel before the classifier that will
+    own it permanently exists. Test-only; production code never does this.
+    """
+    import text_unicode as tu
+    sys.path.insert(0, str(REPO / "src"))
+    from wm_hook.flags import valid_flag_tag_indices
+
+    original = tu._valid_flag_tag_indices
+    tu._valid_flag_tag_indices = valid_flag_tag_indices
+    return tu, original
+
+
+def measure(host: str, policy: dict | None = None, bounded_flags: bool = False) -> list[dict]:
     rows = []
     kb = len(host) / 1024
+    restore = None
+    if bounded_flags:
+        module, original = _with_bounded_flags()
+        restore = (module, original)
     for ch in CHANNELS:
         cap = ch.capacity(host)
         payload = to_bits(bytes(random.Random(11).getrandbits(8) for _ in range(cap // 8 + 2)))[:cap]
@@ -81,6 +102,9 @@ def measure(host: str, policy: dict | None = None) -> list[dict]:
             "survival_pct": 100 * post / pre if pre else 0.0,
             "host_bytes_changed": len(stuffed) != len(cleaned),
         })
+    if restore:
+        module, original = restore
+        module._valid_flag_tag_indices = original
     return rows
 
 
@@ -88,10 +112,36 @@ def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--json", action="store_true")
     p.add_argument("--host-kb", type=int, default=4)
+    p.add_argument("--bounded-flags", action="store_true",
+                   help="apply wm_hook.flags' bounded validation and re-measure")
+    p.add_argument("--compare", action="store_true",
+                   help="measure with and without the bound, and show the delta")
     args = p.parse_args()
 
     host = make_host(args.host_kb)
-    rows = measure(host)
+
+    if args.compare:
+        before = {r["key"]: r for r in measure(host)}
+        after = {r["key"]: r for r in measure(host, bounded_flags=True)}
+        print(f"host: {len(host)} bytes of carrier-free ASCII prose\n")
+        print(f"{'channel':<32} {'before b/KB':>12} {'after b/KB':>11} {'delta':>9}")
+        print("-" * 70)
+        tb = ta = 0.0
+        for k, b in sorted(before.items(), key=lambda kv: -kv[1]["post_bits_per_kb"]):
+            a = after[k]
+            tb += b["post_bits_per_kb"]
+            ta += a["post_bits_per_kb"]
+            d = a["post_bits_per_kb"] - b["post_bits_per_kb"]
+            mark = "  <-- CLOSED" if b["post_bits_per_kb"] > 0 and a["post_bits_per_kb"] == 0 else ""
+            print(f"{b['name']:<32} {b['post_bits_per_kb']:>12.0f} "
+                  f"{a['post_bits_per_kb']:>11.0f} {d:>+9.0f}{mark}")
+        print("-" * 70)
+        print(f"{'RESIDUAL TOTAL':<32} {tb:>12.0f} {ta:>11.0f} {ta - tb:>+9.0f}")
+        if tb:
+            print(f"\n  bounded flag validation removes {100*(tb-ta)/tb:.1f}% of residual capacity")
+        return 0
+
+    rows = measure(host, bounded_flags=args.bounded_flags)
     rows.sort(key=lambda r: -r["post_bits_per_kb"])
 
     if args.json:

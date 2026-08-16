@@ -161,6 +161,11 @@
     on the same bases.
   - Bound subdivision-flag tag payloads to a conforming length and alphabet, so
     an arbitrary-length hidden payload behind a flag is treated as contraband.
+    **Partly done ahead of schedule:** `src/wm_hook/flags.py` implements the
+    bounded predicate with 24 tests, measured to remove 63.8% of residual
+    covert-channel capacity. It is standalone and not yet wired into the
+    pipeline; this task must consume it rather than reimplement it, and 3.1
+    must route the classifier through it.
   - Group observable: an information-source emoji keeps its presentation
     selector, a joiner between two ASCII digits is removed, a long tag payload
     behind a flag is stripped, and a smuggled selector run retains only its

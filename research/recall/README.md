@@ -49,7 +49,35 @@ A count ranked that equal with trailing-whitespace encoding at 14 b/KB, a
 channel 100 times narrower. The capacity metric ranks the fix order by itself
 instead of relying on someone noticing.
 
-### Priority that falls out
+### Fixed: the flag payload bound
+
+`src/wm_hook/flags.py` implements bounded validation per Unicode TR51: the tag
+spec must be 2–6 characters drawn from `U+E0030`–`U+E0039` and
+`U+E0061`–`U+E007A`, terminated by `U+E007F`. The vendored predicate accepted
+the entire printable tag range at any length.
+
+Measured with `capacity.py --compare`:
+
+| Channel | before b/KB | after b/KB |
+| --- | ---: | ---: |
+| Tag block behind a flag emoji | 1535 | **0** |
+| Residual total | 2405 | **870** |
+
+**63.8% of residual capacity removed by one bound.** The three interchange
+subdivision flags — `gbeng`, `gbsct`, `gbwls` — still validate.
+
+The cap is not arbitrary: 36 symbols over at most 6 positions is about 31 bits
+*total* for a whole sequence, and every one of those bits has to spell a
+plausible ISO 3166-2 subdivision code. That is not a channel.
+
+The fix is a standalone slice of `watermark-removal` task 2.4(b), deliberately
+free of any dependency on segmentation or the classifier, so the largest hole
+could be closed without waiting for the rest of that task. It is not yet wired
+into the cleaning pipeline — that happens when 2.4 and 3.1 land. `capacity.py`
+demonstrates it by rebinding the vendored predicate for the duration of a
+measurement.
+
+### Remaining priority
 
 1. **Bound the flag payload.** 64% of residual, and the fix is a length and
    alphabet check on a conforming 2–6 character subdivision code. Specified as
