@@ -27,14 +27,14 @@ look binary are skipped with a warning and never modified.
 
 Install (no system Python needed if you have uv):
 
-    uvx --from 'git+https://github.com/norandom/watermarks-remover@<tag>' wm-hook --help
-    pipx install 'git+https://github.com/norandom/watermarks-remover@<tag>'
+    uvx --from 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1' wm-hook --help
+    pipx install 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1'
 
 .pre-commit-config.yaml in any target repo (pre-commit builds the isolated
 env itself, so this needs nothing preinstalled beyond pre-commit):
 
     - repo: https://github.com/norandom/watermarks-remover
-      rev: <tag>
+      rev: v0.1.0a1
       hooks:
         - id: wm-hook
 

@@ -1,6 +1,6 @@
 # Consumed by the pre-commit framework via:
 #   - repo: https://github.com/norandom/watermarks-remover
-#     rev: <tag>
+#     rev: v0.1.0a1
 #     hooks:
 #       - id: wm-hook          # removal: rewrites files, fails the commit
 #       - id: wm-hook-check    # validation: reports only, never writes

@@ -12,7 +12,7 @@ do it, and on your shell's current directory. Prefer one of these:
 === "No install (recommended)"
 
     ```bash
-    uvx --from git+https://github.com/norandom/watermarks-remover \
+    uvx --from git+https://github.com/norandom/watermarks-remover@v0.1.0a1 \
         wm-hook --detect /path/to/project
     ```
 
@@ -31,7 +31,7 @@ do it, and on your shell's current directory. Prefer one of these:
 === "Installed on your PATH"
 
     ```bash
-    uv tool install git+https://github.com/norandom/watermarks-remover
+    uv tool install git+https://github.com/norandom/watermarks-remover@v0.1.0a1
     wm-hook --detect /path/to/project
     ```
 

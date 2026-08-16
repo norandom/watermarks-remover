@@ -209,7 +209,7 @@ skipping `.git`, `node_modules`, `.venv`, `dist`, `build` and a built `site/`:
 
 ```bash
 # no install at all
-uvx --from git+https://github.com/norandom/watermarks-remover \
+uvx --from git+https://github.com/norandom/watermarks-remover@v0.1.0a1 \
     wm-hook --detect /path/to/project
 
 # or from a checkout, from any directory
@@ -248,7 +248,7 @@ covert channel to fall back on.
 ```yaml
 repos:
   - repo: https://github.com/norandom/watermarks-remover
-    rev: <tag>
+    rev: v0.1.0a1
     hooks:
       - id: wm-hook              # rewrites files
         exclude: '^(site/|vendor/|locales/)'

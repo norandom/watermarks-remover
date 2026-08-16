@@ -1,0 +1,76 @@
+name: Release
+
+# Requirement 5 of .kiro/specs/ci-pipeline. Dagger runs the gates and the build
+# inside a container here, exactly as scripts/release.sh runs them on a
+# workstation -- same script, same image, same order. GitHub Actions supplies
+# what a workstation cannot: the trigger, a clean checkout of the exact commit
+# being released, and a token that never touches a developer's disk.
+#
+# Trigger by pushing a tag:
+#
+#     git tag -a v0.1.0a1 -m "Release v0.1.0a1" && git push origin v0.1.0a1
+#
+# or from the Actions tab with workflow_dispatch. Either way the gates run
+# before anything is published, and a failed gate leaves no release behind.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the leading v (e.g. 0.1.0a1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write   # create the release and upload artifacts
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false   # never interrupt a publish midway
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the changelog needs the history and prior tags
+
+      - name: Derive the version
+        id: v
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing $VERSION"
+
+      - name: Install Dagger
+        run: |
+          curl -fsSL https://dl.dagger.io/dagger/install.sh \
+            | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # Requirement 5.1: nothing is published unless every gate passes for this
+      # exact commit. The gates run in a container via Dagger: full suite on
+      # Linux, hook-manifest validation, build, no-runtime-dependencies check,
+      # required-modules check, and a clean-install smoke test of the built
+      # wheel. Requirement 5.3 and 5.4 -- tag unused, version agrees -- are
+      # checked before any of that work begins.
+      - name: Gates, build and publish
+        env:
+          GH_TOKEN: ${{ github.token }}   # Requirement 6.3: from the env, never the repo
+        run: bash scripts/release.sh "${{ steps.v.outputs.version }}" --publish
+
+      - name: Keep the artifacts even if publishing was skipped
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ steps.v.outputs.version }}
+          path: dist/
+          if-no-files-found: warn

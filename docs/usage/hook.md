@@ -40,7 +40,7 @@ again.
 ```yaml
 repos:
   - repo: https://github.com/norandom/watermarks-remover
-    rev: <tag>
+    rev: v0.1.0a1
     hooks:
       - id: wm-hook              # rewrites files
         exclude: '^(tests/fixtures/|locales/|site/|vendor/)'
@@ -120,7 +120,7 @@ checked is currently indistinguishable from one that was.
 ## Standalone
 
 ```console
-uvx --from 'git+https://github.com/norandom/watermarks-remover@<tag>' wm-hook --help
+uvx --from 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1' wm-hook --help
 ```
 
 Takes explicit paths. It does not walk directories.
