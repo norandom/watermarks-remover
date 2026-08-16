@@ -18,7 +18,7 @@ You do not need to install anything. `uvx` builds a throwaway environment, runs
 the tool, and deletes the environment again.
 
 ```console
-$ uvx --from 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1' \
+$ uvx --from 'git+https://github.com/norandom/watermarks-remover' \
       wm-hook --detect -v .
 CARRIER! release-notes.md: covert carrier present, and it decodes
          30 carrier(s), 0 explained, 30 unexplained
@@ -54,7 +54,7 @@ place, so run that under git and read the diff. Exit codes for `--detect`: `0`
 clean, `1` a carrier was established, `2` unreadable input or no text files found.
 
 To keep the command on your PATH instead, run
-`uv tool install 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1'`.
+`uv tool install 'git+https://github.com/norandom/watermarks-remover'`.
 
 ## Wire it into pre-commit
 
@@ -69,20 +69,44 @@ repos:
       - id: wm-hook-check        # manual stage, reports only
 ```
 
+The install commands above deliberately track the default branch, so you always
+get the newest code. Pin them yourself if you want a fixed version: add
+`@v0.1.0a1` to the `git+` URL, or a tag to the raw script URL.
+
+`rev:` is the exception and stays pinned. pre-commit caches by rev and its whole
+point is that everyone on the team runs the same version, so it warns on a
+mutable reference. Move it with `pre-commit autoupdate`.
+
 Run `pre-commit run --all-files` once and read the diff before you trust it.
 Hook order, exclusions and CI gates:
 [The pre-commit hook](https://norandom.github.io/watermarks-remover/usage/hook/).
 
-## What it found
+## Or run it with nothing installed at all
 
-- 8 external repositories, 1,155 text files, scanned with nothing excluded.
-- Hidden data was established in **0** files. One file was reported as an anomaly.
-- With zero positives in 1,155 files, the false-positive rate is at most
-  **0.26%** per file at 95% confidence. That is the rule of three: 3 / 1,155.
-- Two of those repositories were written almost entirely by coding agents, one
-  of 707 files and one of 195 files. Both scan clean.
-- The table per repository, and the other numbers:
-  [Results](https://norandom.github.io/watermarks-remover/experiment/baseline/).
+Two throwaway scripts. They list every invisible character and stop there, with
+no explanation layer, so they cannot tell an emoji selector from hidden data.
+Use them to look. Use `wm-hook` for a verdict.
+
+**Windows.** Needs Windows PowerShell 5.1, which ships with Windows 10 and 11.
+
+```powershell
+irm https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.ps1 | iex
+```
+
+A script piped into `iex` cannot take parameters, so set a variable first:
+
+```powershell
+$WmPath = 'C:\src\myrepo'; irm <same url> | iex
+```
+
+**Linux and macOS.** Uses ripgrep, or falls back to `grep -P`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.sh | bash
+```
+
+Read anything you pipe into a shell, these included. Both only read files.
+Neither writes, deletes, or connects anywhere.
 
 ## What a result means
 

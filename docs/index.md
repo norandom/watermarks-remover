@@ -21,7 +21,7 @@ worth. A positive result and a negative result mean very different things.
 `--detect` only reads. It never changes a file.
 
 ```bash
-uvx --from git+https://github.com/norandom/watermarks-remover@v0.1.0a1 wm-hook --detect .
+uvx --from git+https://github.com/norandom/watermarks-remover wm-hook --detect .
 ```
 
 Real output, from running that in `src/wm_hook/core` of this repository:
@@ -47,14 +47,46 @@ read or no text files were found.
 Install, a full worked example and the hook setup are in the
 [Quickstart](usage/quickstart.md).
 
-## What it found
+## Or run it with nothing installed
 
-- Scanned on 2026-08-16: 8 external repositories, 1,155 text files.
-- 0 carriers established. 1 anomaly.
-- That bounds the false-positive rate at 0.26% per file, with 95% confidence.
-- Nothing deliberately hid data in that corpus. The negative result is the
-  finding.
-- Corpus, numbers and dates: [Results](experiment/baseline.md).
+Two throwaway scripts. They list every invisible character and stop there. They
+have no explanation layer, so they cannot tell an emoji selector from hidden
+data. Use them to look; use `wm-hook` for a verdict.
+
+=== "Windows"
+
+    Needs Windows PowerShell 5.1, which ships with Windows 10 and 11.
+
+    ```powershell
+    irm https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.ps1 | iex
+    ```
+
+    To scan somewhere else, set a variable first. A script piped into `iex`
+    cannot take parameters.
+
+    ```powershell
+    $WmPath = 'C:\src\myrepo'; irm <same url> | iex
+    ```
+
+=== "Linux and macOS"
+
+    Uses ripgrep, or falls back to `grep -P`.
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.sh | bash
+    ```
+
+    Or with a path:
+
+    ```bash
+    curl -fsSL <same url> -o detect.sh && bash detect.sh /path/to/repo
+    ```
+
+!!! warning "Read anything you pipe into a shell"
+
+    That goes for these and for every other `irm | iex` or `curl | bash` you
+    are offered. Both scripts only read files. Neither writes, deletes, or
+    connects anywhere. You can check that in a minute, and you should.
 
 ## What a result means
 

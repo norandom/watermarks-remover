@@ -277,7 +277,7 @@ conflict. The reason is in [What it means](what-it-means.md).
 Scan for hidden data. This never writes:
 
 ```bash
-uvx --from git+https://github.com/norandom/watermarks-remover@v0.1.0a1 \
+uvx --from git+https://github.com/norandom/watermarks-remover \
     wm-hook --detect /path/to/repo
 ```
 

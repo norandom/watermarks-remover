@@ -10,7 +10,7 @@ You do not need to activate a virtualenv. Pick one option.
 === "No install (recommended)"
 
     ```console
-    $ uvx --from 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1' wm-hook --version
+    $ uvx --from 'git+https://github.com/norandom/watermarks-remover' wm-hook --version
     wm-hook 0.1.0a1
     ```
 
@@ -19,7 +19,7 @@ You do not need to activate a virtualenv. Pick one option.
 === "On your PATH"
 
     ```bash
-    uv tool install 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1'
+    uv tool install 'git+https://github.com/norandom/watermarks-remover'
     ```
 
     Then `wm-hook` is a normal command. Update it with `uv tool upgrade`.

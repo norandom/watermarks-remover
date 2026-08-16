@@ -99,7 +99,7 @@ Devanagari need joiners, and a byte-order mark is just an encoding signature.
 This script cannot tell those apart from hidden data.
 
 For a verdict rather than a list:
-  uvx --from git+https://github.com/norandom/watermarks-remover@v0.1.0a1 \\
+  uvx --from git+https://github.com/norandom/watermarks-remover \\
       wm-hook --detect $TARGET
 EOF
 exit 1

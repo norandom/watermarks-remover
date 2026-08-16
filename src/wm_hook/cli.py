@@ -27,8 +27,8 @@ look binary are skipped with a warning and never modified.
 
 Install (no system Python needed if you have uv):
 
-    uvx --from 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1' wm-hook --help
-    pipx install 'git+https://github.com/norandom/watermarks-remover@v0.1.0a1'
+    uvx --from 'git+https://github.com/norandom/watermarks-remover' wm-hook --help
+    pipx install 'git+https://github.com/norandom/watermarks-remover'
 
 .pre-commit-config.yaml in any target repo (pre-commit builds the isolated
 env itself, so this needs nothing preinstalled beyond pre-commit):

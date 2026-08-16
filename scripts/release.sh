@@ -79,20 +79,32 @@ echo "  pyproject and tag agree on $VERSION"
 # version. So it is a gate rather than a checklist item.
 
 step "documentation pins this version"
-# The pages that actually tell someone what to install. detect.md deliberately
-# is not one of them any more: it links to the quickstart rather than repeating
-# install instructions, and listing it here would force a version string into a
-# page that has no reason to carry one.
-PINNED=(README.md docs/usage/quickstart.md docs/usage/hook.md
-        .pre-commit-hooks.yaml src/wm_hook/cli.py)
-for f in "${PINNED[@]}"; do
-    [ -f "$f" ] || fail "$f is missing"
-    if grep -q '<tag>' "$f"; then
-        fail "$f still contains the <tag> placeholder"
-    fi
-    grep -q "v$VERSION" "$f" || fail "$f does not reference v$VERSION"
+# Only pre-commit revs are checked, because only they are pinned on purpose.
+# The install commands track the default branch so a reader always gets the
+# newest code and nothing goes stale; a "docs mention the tag" gate would force
+# a version string into pages that have no reason to carry one, and it already
+# did once, failing the release after detect.md was rewritten to link to the
+# quickstart instead of repeating install instructions.
+#
+# pre-commit is the exception worth gating. It caches by rev and warns on a
+# mutable reference, so a stale rev: there really is a defect.
+REV_FILES=$(grep -rl --include='*.md' --include='*.yaml' --include='*.py' \
+                 'rev: v' README.md docs/ src/ .pre-commit-hooks.yaml 2>/dev/null || true)
+[ -n "$REV_FILES" ] || fail "no pre-commit rev: found anywhere; expected at least one"
+bad=0
+for f in $REV_FILES; do
+    while IFS= read -r line; do
+        case "$line" in
+            *"rev: v$VERSION"*) ;;
+            *) echo "  $f: $(echo "$line" | tr -d '\r' | sed 's/^ *//')" >&2; bad=1 ;;
+        esac
+    done < <(grep 'rev: v' "$f")
 done
-echo "  ${#PINNED[@]} files pin v$VERSION"
+[ "$bad" = 0 ] || fail "the pre-commit rev: above does not match v$VERSION"
+if grep -rl '<tag>' README.md docs/ src/ .pre-commit-hooks.yaml 2>/dev/null | grep -q .; then
+    fail "a <tag> placeholder is still present"
+fi
+echo "  every pre-commit rev: says v$VERSION, and no placeholders remain"
 
 # --- Requirement 5.3: refuse a version that is already published ------------
 #
