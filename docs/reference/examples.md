@@ -34,29 +34,6 @@ after   # Release notes
 
 `88 bytes -> 32. removed=14.` The payload decodes to `gen=2026-08-16`.
 
-### AI provenance frontmatter
-
-```yaml
-# before
----
-title: Release notes
-generator: claude-opus-4
-author: Marius
----
-
-Body text.
-
-# after
----
-title: Release notes
-author: Marius
----
-
-Body text.
-```
-
-`drop frontmatter key: generator`
-
 ## Code
 
 ### Private-use characters

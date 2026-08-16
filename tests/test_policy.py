@@ -117,6 +117,10 @@ class TestPolicyCannotOverrideCorrectness:
         ]
         assert suspicious == []
 
-    def test_the_flag_vocabulary_is_exactly_the_documented_seven(self) -> None:
-        """A new flag is a design change and must go through the spec first."""
-        assert len(CleanPolicy.field_names()) == 7
+    def test_the_flag_vocabulary_is_exactly_the_documented_six(self) -> None:
+        """A new flag is a design change and must go through the spec first.
+
+        Was seven. `drop_frontmatter_keys` went with the frontmatter feature,
+        which was provenance metadata rather than a text carrier.
+        """
+        assert len(CleanPolicy.field_names()) == 6

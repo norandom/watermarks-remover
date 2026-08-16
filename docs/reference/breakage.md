@@ -108,33 +108,21 @@ indented continuation line.
 
 A second run reports `clean`. The file is broken and the mark is permanent.
 
-## Files rewritten with nothing to remove
+## Removed with the feature
 
-CRLF markdown with YAML frontmatter is rewritten even when it contains no
-carriers:
+Three defects were resolved by deleting frontmatter key removal rather than
+fixing it. Recorded because older documentation described them:
 
-```
-before: ---\r\ntitle: Hi\r\n---\r\n\r\nbody\r\n
-after:  ---\ntitle: Hi\n---\n\r\nbody\r\n
-```
+- a value merely mentioning a vendor deleted the whole key, so
+  `title: Comparing Claude and Gemini` lost its title;
+- CRLF frontmatter blocks were rebuilt with line feeds, rewriting files that
+  contained no marks at all;
+- a leading `---` thematic break was parsed as a frontmatter delimiter,
+  deleting body prose.
 
-The frontmatter block is rebuilt with LF joins while the body keeps CRLF,
-producing mixed line endings and a diff on every frontmatter line. Reported as
-`unicode removed=0 replaced=0`.
-
-## Content deleted by name matching
-
-A frontmatter value that merely mentions a vendor deletes the whole key:
-
-```yaml
----
-title: Comparing Claude and Gemini
----
-```
-
-The title is removed. If it was the only key, the entire frontmatter block goes
-with it.
-
+Frontmatter *recognition* remains, because a space homoglyph at the start of a
+YAML line is structurally significant. Cleaning its keys was a different job
+and is gone. See `.kiro/steering/scope.md`.
 ## Status
 
 | Behaviour | State |

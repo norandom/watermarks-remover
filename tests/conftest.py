@@ -65,7 +65,6 @@ POLICY_FIELD_DEFAULTS: Mapping[str, bool] = MappingProxyType(
         "strip_bidi": False,
         "strip_emoji_glue": False,
         "aggressive_homoglyphs": False,
-        "drop_frontmatter_keys": True,
     }
 )
 

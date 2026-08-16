@@ -56,15 +56,19 @@ after   Shipped today.
 
 The payload decodes to `gen=2026`.
 
-### AI frontmatter
+### Tag payload behind a flag emoji
 
-```diff
-  ---
-  title: Release notes
-- generator: claude-opus-4
-  author: Marius
-  ---
+The widest channel found, and the one a technique count would have missed:
+prefix a payload with 🏴 and terminate it, and the subdivision-flag exemption
+waved through **any length**.
+
+```text
+before  Status 🏴<14 invisible tag characters>󠀿 ok
+after   Status  ok
 ```
+
+Bounded to a conforming 2–6 character subdivision code. Worth 1535 bits/KB —
+64% of everything that used to survive cleaning.
 
 ### And what it gets wrong
 
@@ -106,13 +110,22 @@ Catalogue: [Invisible characters](docs/reference/characters.md).
 
 ---
 
-## The three channels
+## Scope: Channel A only
 
 | Channel | Carrier | Removal | Here |
 | --- | --- | --- | --- |
-| **A. Format** | codepoints that render as nothing | lossless | yes |
-| **B. Statistical** | which words the model chose | needs paraphrase | **never** |
-| **C. Declared metadata** | a field that says so | delete the field | frontmatter, containers |
+| **A. Format** | codepoints that render as nothing | lossless | **yes, only this** |
+| **B. Statistical** | which words the model chose | needs paraphrase | no |
+| **C. Declared metadata** | a field that says so | delete the field | no |
+
+Images, C2PA manifests, container metadata, YAML frontmatter keys and
+stylometry have all been removed. The test for readmitting anything: *does it
+change what invisible material is in the text, and can it be removed without
+changing what the text says?*
+
+Narrowing paid for itself. Residual covert-channel capacity fell from 2405 to
+**142 bits per kilobyte** and detection recall rose from 85% to **100%** over
+the same period.
 
 Channel B is permanently out of scope here. Removing a statistical watermark
 means running a paraphrase model over your prose and accepting what comes back.

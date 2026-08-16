@@ -67,8 +67,9 @@ class CleanPolicy:
     #: unattended commit-time rewrite.
     aggressive_homoglyphs: bool = False
 
-    #: Remove AI provenance keys from YAML frontmatter (Requirement 5.1).
-    drop_frontmatter_keys: bool = True
+    # NOTE: `drop_frontmatter_keys` was removed with the frontmatter feature.
+    # Provenance metadata is a different channel from text carriers, and the
+    # feature was the source of three defects that deletion resolved outright.
 
     @classmethod
     def default(cls) -> CleanPolicy:

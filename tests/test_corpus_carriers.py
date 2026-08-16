@@ -165,38 +165,6 @@ EXPECTED_BYTES: dict[str, bytes] = {
         "Nothing else here is a carrier, so the default policy leaves it alone.\n"
     ).encode(),
     # -- provenance frontmatter keys ---------------------------------------
-    "frontmatter_provenance_keys.md": (
-        "---\n"
-        "title: Comparing Claude and Gemini output\n"
-        "generator:\n"
-        "  name: Claude Opus 4.1\n"
-        "  vendor: Anthropic\n"
-        "created_with:\n"
-        "  - claude-code\n"
-        "  - wm-hook\n"
-        "model: linear\n"
-        "date: 2026-03-14\n"
-        "---\n"
-        "\n"
-        "# Comparing Claude and Gemini output\n"
-        "\n"
-        "The body carries no invisible characters and must survive untouched.\n"
-    ).encode(),
-    "frontmatter_keys_concealed.md": (
-        f"{_BOM}---\n"
-        "title: What Claude changed in this release\n"
-        f"gene{_ZWSP}rator: Claude Opus 4.1\n"
-        f"{_ZWNJ}ai-generated: true\n"
-        "model: claude-opus-4\n"
-        "tags:\n"
-        "  - release\n"
-        "  - security\n"
-        "---\n"
-        "\n"
-        "# Release notes\n"
-        "\n"
-        "The body is ordinary prose.\n"
-    ).encode(),
 }
 
 # --------------------------------------------------------------------------
@@ -238,7 +206,9 @@ REQUIRED_CARRIER_CLASSES = frozenset(
         "bidi_override",
         "private_use",
         "byte_order_mark",
-        "provenance_key",
+        # "provenance_key" was removed with the frontmatter feature. Provenance
+        # metadata is a different channel from text carriers, and Requirement 5
+        # is void; see .kiro/steering/scope.md.
     }
 )
 
@@ -251,10 +221,15 @@ REQUIRED_REMOVAL_CRITERIA = frozenset(
         "2.4",  # bidi overrides, unconditionally
         "2.5",  # the Cf catch-all
         "2.6",  # whole runs, in one pass
-        "5.1",  # provenance keys with their nested blocks
-        "5.3",  # an ambiguous key corroborated by its value
-        "5.6",  # provenance hidden behind a mark or an invisible character
-        "7.3",  # one class concealing another, removed together
+        # Requirement 5 (5.1, 5.3, 5.6) is void: frontmatter key removal was
+        # provenance metadata, not a text carrier, and the feature is gone.
+        #
+        # 7.3 (one class concealing another) left with it. Every concealment
+        # case this corpus held was a mark hiding a *frontmatter key* -- a BOM
+        # or a zero-width character before the fence. Carrier-on-carrier
+        # concealment is still real, and the selector-run entry exercises it,
+        # but nothing annotates 7.3 any more so the corpus cannot answer for
+        # it. Restore this line if such an entry is added.
         "9.1",  # a transformation disabled independently of the others
         "9.2",  # a disabled transformation changes nothing
     }
@@ -268,8 +243,7 @@ REQUIRED_RESIDUE_CRITERIA = frozenset(
         "2.3",  # the first selector after a legal base survives
         "3.2",  # a presentation selector in a genuine keycap sequence
         "3.7",  # directional marks and a balanced isolate
-        "5.2",  # a vendor name in a value is not a provenance key
-        "5.3",  # an uncorroborated ambiguous key survives
+        # 5.2 and 5.3 went with Requirement 5 and the frontmatter feature.
         "6.5",  # a byte-order mark at offset zero
     }
 )
@@ -1196,42 +1170,6 @@ def test_leading_bom_entry_is_a_carrier_only_under_strip_bom():
     assert not _contraband_positions(text, {})
     assert _contraband_positions(text, {"strip_bom": True}) == frozenset({0})
     assert _policy_of("bom_signature_only.txt") == {"strip_bom": True}
-
-
-def test_frontmatter_entry_drops_provenance_keys_and_keeps_the_rest():
-    text = _decode("frontmatter_provenance_keys.md")
-    pairs = dict(_frontmatter_pairs(text))
-
-    # A nested block and a list block, both of which Requirement 5.1 takes
-    # with their key.
-    assert "generator:\n  name: Claude Opus 4.1\n  vendor: Anthropic\n" in text
-    assert "created_with:\n  - claude-code\n  - wm-hook\n" in text
-    # The corrections: a vendor named in a *value* keeps its key (5.2), and an
-    # ambiguous name with an ordinary value keeps its key (5.3).
-    assert "Claude" in pairs["title"] and "Gemini" in pairs["title"]
-    assert pairs["model"] == "linear"
-    assert not [i for i, ch in enumerate(text) if _is_carrier_class(ch)]
-
-
-def test_concealed_frontmatter_entry_hides_its_keys_behind_invisibles():
-    entry = BY_NAME["frontmatter_keys_concealed.md"]
-    text = _decode(entry.name)
-
-    # A byte-order mark before the opening delimiter and an invisible
-    # character inside a key name: Requirement 5.6 and 7.3, found on pass one.
-    assert text.startswith(_BOM + "---\n")
-    assert f"gene{_ZWSP}rator:" in text
-    assert f"\n{_ZWNJ}ai-generated:" in text
-    assert "generator" in entry.annotation("expected_removed_keys")
-    assert "ai-generated" in entry.annotation("expected_removed_keys")
-    # The ambiguous key that its value does corroborate (Requirement 5.3).
-    assert dict(_frontmatter_pairs(text))["model"] == "claude-opus-4"
-    assert "model" in entry.annotation("expected_removed_keys")
-
-
-# --------------------------------------------------------------------------
-# The annotation contract is enforced, not merely present
-# --------------------------------------------------------------------------
 
 
 def _clone_corpus(work_tree) -> dict:

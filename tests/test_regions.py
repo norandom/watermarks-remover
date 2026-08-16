@@ -539,26 +539,6 @@ def test_corpus_crlf_markdown_frontmatter() -> None:
     assert seg.region_at(thematic).kind is RegionKind.BODY
 
 
-def test_corpus_frontmatter_keys_concealed() -> None:
-    """The BOM-convergence reproduction: a mark hides the whole block."""
-    text = _corpus_text(CARRIERS_CORPUS, "frontmatter_keys_concealed.md")
-    seg = segment(text, **_MD)
-    _assert_tiles(seg, text)
-
-    assert seg.has_frontmatter is True
-    assert _merged(seg)[0] == (RegionKind.PREAMBLE, 0, 1)
-
-    body_start, body_end = seg.spans(RegionKind.FRONTMATTER_BODY)[0]
-    block = text[body_start:body_end]
-    assert f"gene{_ZWSP}rator: Claude Opus 4.1" in block
-    assert f"{_ZWNJ}ai-generated: true" in block
-    assert "# Release notes" not in block
-
-    # Both concealed keys sit at a line start: a space there is structural.
-    for needle in (f"gene{_ZWSP}rator", f"{_ZWNJ}ai-generated"):
-        assert seg.is_structural(text.index(needle)) is True
-
-
 def test_corpus_bom_prefixed_csv() -> None:
     """A byte-order-marked data file: preamble, then body, no frontmatter."""
     text = _corpus_text(PRESERVATION_CORPUS, "bom_prefixed.csv")

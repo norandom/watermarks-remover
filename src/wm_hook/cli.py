@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
-"""wm-hook — pre-commit cleaner for AI provenance marks in text files.
+"""wm-hook — pre-commit cleaner for invisible Unicode carriers in text.
 
-Strips Layer A invisible-Unicode carriers (ZWSP, bidi controls, tag chars,
-exotic spaces) from any text file, plus AI YAML-frontmatter keys from Markdown
-and Quarto files. The cleaning modules live in core/ and originated in
+Strips Layer A carriers from any text file: zero-width characters, Unicode tag
+sequences, orphan variation selectors, private-use codepoints, bidi overrides,
+and space homoglyphs. The cleaning modules live in core/ and originated in
 guillaumemeyer/watermarks-remover; see NOTICE. This is a fork, not a vendored
 dependency, and core/ is edited freely.
+
+**Scope is text and Unicode carriers, and nothing else.** Images, C2PA
+manifests, container metadata, YAML frontmatter keys and stylometry are all
+out of scope and were removed. Each was a different medium or a different
+kind of evidence, and carrying them widened the surface without serving the
+question this tool answers: what invisible material is in my text, and can it
+be removed without changing what the text says.
+
+Frontmatter key removal in particular is gone. It was provenance *metadata*,
+not a text carrier, and it was the source of three of the worst defects:
+deleting a whole key when its value merely named a vendor, rebuilding CRLF
+blocks with line feeds, and eating a leading thematic break. Deleting the
+feature removed all three.
 
 Autofix semantics for pre-commit: changed files are rewritten in place
 (atomic, no .bak — git is the backup) and the exit code is 1, so the commit
@@ -44,12 +57,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / "core"))
 
 from common import MAX_INPUT_BYTES, eprint, looks_binary, safe_write_text  # noqa: E402
-from frontmatter import clean_markdown  # noqa: E402
 from text_unicode import clean_text  # noqa: E402
-
-# Markdown routing covers .md/.markdown/.mdx, plus .qmd (Quarto), which shares
-# the YAML frontmatter convention.
-MARKDOWN_EXTS = {".md", ".markdown", ".mdx", ".qmd"}
 
 
 def _version() -> str:
@@ -80,19 +88,13 @@ def clean_one(path: Path, *, check: bool) -> tuple[str, str]:
         return "skipped", f"looks like {binary} — left untouched"
 
     text = data.decode("utf-8", errors="surrogateescape")
-    actions: list[str] = []
-    if path.suffix.lower() in MARKDOWN_EXTS:
-        text, fm_actions = clean_markdown(text)
-        actions.extend(a for a in fm_actions if not a.startswith("no "))
     text, stats = clean_text(text)
 
     new_data = text.encode("utf-8", errors="surrogateescape")
     if new_data == data:
         return "clean", ""
 
-    parts = [f"unicode removed={stats['removed_count']} replaced={stats['replaced_count']}"]
-    parts.extend(actions)
-    detail = "; ".join(parts)
+    detail = f"unicode removed={stats['removed_count']} replaced={stats['replaced_count']}"
     if check:
         return "changed", f"would clean ({detail})"
     try:

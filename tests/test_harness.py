@@ -67,7 +67,6 @@ def test_policy_variant_defaults_match_the_documented_flags(
         "strip_bidi": False,
         "strip_emoji_glue": False,
         "aggressive_homoglyphs": False,
-        "drop_frontmatter_keys": True,
     }
     assert dict(policy_variant().fields) == dict(policy_field_defaults)
     assert dict(policy_variant().overrides) == {}
@@ -84,7 +83,7 @@ def test_policy_variant_applies_overrides_without_mutating_the_defaults(
     }
     assert variant.fields["strip_private_use"] is True
     assert variant.fields["normalize_spaces"] is False
-    assert variant.fields["drop_frontmatter_keys"] is True
+    assert variant.fields["strip_bidi"] is False  # untouched flags carry through
 
     # The shared default table survives a variant being built from it.
     assert policy_field_defaults["strip_private_use"] is False
