@@ -81,7 +81,7 @@
 
 - [ ] 2. Core: the owned policy layer
 
-- [ ] 2.1 Define the transform policy value object
+- [x] 2.1 Define the transform policy value object
   - Provide one immutable flag per risky transform, with a documented default
     for each, and a constructor for the safe default set.
   - Three defaults change from today's behaviour: private-use characters are
@@ -110,7 +110,7 @@
   - _Requirements: 1.3, 4.1, 4.2, 5.4, 5.6, 6.5, 7.3_
   - _Boundary: regions_
 
-- [ ] 2.3 (P) Implement the mode-preserving atomic write
+- [x] 2.3 (P) Implement the mode-preserving atomic write
   - Capture the original file's permissions, write through a temporary file in
     the same directory, restore the captured mode, flush to disk, and move it
     into place.
@@ -369,6 +369,22 @@
 - **1.1** — Test data must never contain a *literal* invisible carrier. This
   repo's own hook would rewrite the test file and silently corrupt the
   constant. Always write carriers as `\uXXXX` escapes.
+- **2.3** — **WSL (`Debian-MW`) is available on this host** and is the way to
+  verify POSIX behaviour that Windows cannot show. Copy `src/`, `tests/` and
+  `pyproject.toml` into a tmpfs path inside WSL and run pytest there. This is
+  how the executable-bit and real-symlink assertions were proven rather than
+  skipped. Windows reports every writable file as `0o666`, has no `os.fchmod`,
+  refuses `os.replace` over a read-only target, and this account cannot create
+  symlinks — so eight tests skip here and pass there.
+- **2.3** — `write_atomic` **refuses to create a new file** (design's
+  precondition: path exists and is a regular file), narrowing the vendored
+  writer, which did `mkdir(parents=True)` and could create one. With no
+  original there is no mode to preserve. **If task 3.3 needs create-on-write,
+  that is a spec question**, not a silent fallback.
+- **2.3** — Uses `os.lstat`, not the design note's `os.stat`. `os.stat`
+  follows a symlink, so it would capture the *victim's* mode and could not
+  detect the link at all. One `lstat` answers both questions about the link
+  itself and cannot race apart.
 - **1.4** — `tests/test_corpus_carriers.py` contains a *model* of the
   documented classification rules (`_is_preserved`, `_dropped_keys`), written
   because the real classifier does not exist until 2.4–2.5. **Task 4.3 must
