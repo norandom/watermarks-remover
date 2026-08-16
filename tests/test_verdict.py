@@ -223,6 +223,25 @@ def test_there_is_no_room_for_a_codepoint_carrier_to_hide():
     assert invisible == [], f"unexpected carrier material: {invisible!r}"
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="Known false positive. Nerd Font and icon-font glyphs are private-use "
+           "codepoints sitting in ASCII config text, which is exactly the shape "
+           "private_use_in_text scores as payload. The preservation corpus says "
+           "this file must never be flagged, and it is. Distinguishing an icon "
+           "font from a payload needs more than adjacency -- probably the range "
+           "(Nerd Fonts cluster in U+E000-U+F8FF) plus the file's role -- and "
+           "that is a change with its own false-positive profile.",
+)
+def test_icon_font_private_use_is_not_payload():
+    fixture = (
+        Path(__file__).resolve().parent
+        / "corpus" / "preservation" / "icon_font_private_use.txt"
+    )
+    v = classify(fixture.read_bytes().decode("utf-8"))
+    assert not v.carrier_present
+
+
 def test_capacity_is_reported_in_bits():
     v = classify("The release ships Tuesday." + zw_bits(b"AI"))
     assert v.bits_available == 16  # one bit per zero-width codepoint

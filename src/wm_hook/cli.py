@@ -50,6 +50,7 @@ commit-time hook.
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import sys
 from importlib import metadata
@@ -122,12 +123,65 @@ def read_text(path: Path) -> tuple[str | None, str]:
     return data.decode("utf-8", errors="surrogateescape"), ""
 
 
-def detect(paths: list[Path], *, as_json: bool, verbose: bool) -> int:
-    """Report whether a covert carrier is present. Exit 1 if any is.
+#: What each verdict level means, in words a reader does not have to decode.
+_LEVEL_BLURB = {
+    _verdict.NONE: "no invisible characters at all",
+    _verdict.BENIGN: "invisible characters, all legitimate",
+    _verdict.ANOMALY: "unexplained, but too little to call it hidden data",
+    _verdict.CARRIER: "hidden data found",
+    _verdict.PAYLOAD: "hidden data found, and it can be read",
+}
 
-    This is a one-sided test and the output says so on every run. A positive
-    establishes that something embedded hidden data; a negative establishes
-    nothing about whether a human wrote the text.
+
+def _summary(results: list[dict], scanned: int, hits: int) -> None:
+    """The default report: counts first, then only the files that matter.
+
+    Printing every file, including the clean ones, buried ten real findings in
+    forty lines of "all legitimate". Worse, the per-file output never answered
+    the question a reader actually has after a clean run: was there any
+    invisible material here at all? The counts answer it in one glance.
+    """
+    counts = collections.Counter(
+        r["level"] for r in results if "level" in r
+    )
+    print(f"{scanned} file(s) scanned\n")
+    for level in _verdict.LEVEL_ORDER:
+        n = counts.get(level, 0)
+        if n:
+            print(f"  {n:>5}  {level:<8} {_LEVEL_BLURB[level]}")
+
+    if hits:
+        print("\nFiles with hidden data:")
+        flagged = [r for r in results if r.get("carrier_present")]
+        width = max(len(r["path"]) for r in flagged)
+        for r in flagged:
+            v_ev = r["payloads"] or r["evidence"]
+            reason = (
+                "reads: " + ", ".join(repr(p["decoded"]) for p in r["payloads"][:2])
+                if r["payloads"]
+                else ", ".join(e["name"] for e in r["evidence"][:3])
+            )
+            print(f"  {r['path']:<{width}}  {reason}" if v_ev else f"  {r['path']}")
+        print(f"\n{hits} of {scanned} file(s) carry hidden data. Run -v for the reasons.")
+    else:
+        print(f"\nNo hidden data in {scanned} file(s).")
+
+    # Said once, at the end, rather than repeated under every finding.
+    print(
+        "\nA clean result does not mean a human wrote the text. It only means\n"
+        "nothing is hidden in the characters. Anthropic marks Claude output by\n"
+        "changing which words are chosen, which leaves no trace this can see."
+    )
+
+
+def detect(
+    paths: list[Path], *, as_json: bool, verbose: bool,
+) -> int:
+    """Report whether hidden data is present. Exit 1 if any is.
+
+    This is a one-sided test and the output says so once per run. A positive
+    shows that something embedded hidden data; a clean result shows nothing
+    about whether a human wrote the text.
     """
     results, hits, errors = [], 0, 0
     lines: list[str] = []
@@ -142,28 +196,30 @@ def detect(paths: list[Path], *, as_json: bool, verbose: bool) -> int:
         if v.carrier_present:
             hits += 1
         results.append({"path": str(path), **v.to_dict()})
-        if v.level != _verdict.NONE or verbose:
-            lines.extend(_verdict.render(str(path), v, verbose=verbose))
+        # Verbose prints everything above "nothing here". The default prints
+        # nothing per-file and lets the summary do the work.
+        if verbose and v.level != _verdict.NONE:
+            lines.extend(_verdict.render(str(path), v, verbose=True))
+
+    scanned = len(paths) - errors
 
     if as_json:
         json.dump(results, sys.stdout, indent=2, ensure_ascii=False)
         sys.stdout.write("\n")
-    else:
-        for line in lines:
-            print(line)
-        scanned = len(paths) - errors
-        if not scanned:
-            # Never print a reassuring summary for a scan that did not happen.
-            # "0 of 0 files are clean" is the manufactured confidence this
-            # project exists to avoid, in its purest form.
-            eprint("wm-hook: no text files were scanned; nothing was checked")
+        if errors:
             return 2
-        print(f"\n{hits} of {scanned} file(s) carry a covert carrier.")
-        if not hits:
-            print(
-                "A clean result is not evidence of human authorship. Statistical\n"
-                "watermarks leave no codepoint trace and are invisible to this test."
-            )
+        return 1 if hits else 0
+
+    for line in lines:
+        print(line)
+    if lines:
+        print()
+    if not scanned:
+        # Never print a reassuring summary for a scan that did not happen.
+        # "0 of 0 files are clean" is manufactured confidence in its purest form.
+        eprint("wm-hook: no text files were scanned; nothing was checked")
+        return 2
+    _summary(results, scanned, hits)
 
     if errors:
         return 2
@@ -194,13 +250,19 @@ def main() -> int:
     )
     p.add_argument("--json", action="store_true", help="machine-readable --detect output")
     p.add_argument("-v", "--verbose", action="store_true",
-                   help="with --detect, report clean files too")
+                   help="with --detect, show why each flagged file was flagged")
+    p.add_argument(
+        "--include-hidden-files", action="store_true",
+        help="also scan dot files and dot directories. Off by default: a scan "
+             "of a project root otherwise reports on .claude/, .kiro/ and "
+             "every other tool's config, which you did not write.",
+    )
     p.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
     args = p.parse_args()
 
     # A directory becomes its text files. pre-commit always passes an explicit
     # list, so this only ever fires for a human pointing at a project.
-    paths = list(iter_text_files(args.paths))
+    paths = list(iter_text_files(args.paths, include_hidden=args.include_hidden_files))
 
     if args.detect:
         return detect(paths, as_json=args.json, verbose=args.verbose)

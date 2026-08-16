@@ -63,3 +63,49 @@ def test_mixed_files_and_directories_both_work(tmp_path):
 def test_an_empty_directory_yields_nothing_rather_than_erroring(tmp_path):
     (tmp_path / "empty").mkdir()
     assert list(iter_text_files([tmp_path / "empty"])) == []
+
+
+# ---------------------------------------------------------------------------
+# Hidden files. Scanning a project root used to report on .claude/ and .kiro/,
+# which the user did not write and did not ask about. It nearly doubled the
+# output on a real repository: 161 files scanned where 87 were the user's.
+# ---------------------------------------------------------------------------
+
+def _dotted(root):
+    (root / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (root / ".env.yaml").write_text("k: v\n", encoding="utf-8")
+    for tool in (".claude", ".kiro"):
+        d = root / tool / "skills"
+        d.mkdir(parents=True)
+        (d / "notes.md").write_text("# notes\n", encoding="utf-8")
+    return root
+
+
+def test_dot_directories_are_skipped_by_default(tmp_path):
+    found = {p.name for p in iter_text_files([_dotted(tmp_path)])}
+    assert found == {"app.py"}
+
+
+def test_dot_files_are_skipped_by_default(tmp_path):
+    _dotted(tmp_path)
+    assert ".env.yaml" not in {p.name for p in iter_text_files([tmp_path])}
+
+
+def test_include_hidden_brings_them_back(tmp_path):
+    found = {p.name for p in iter_text_files([_dotted(tmp_path)], include_hidden=True)}
+    assert found == {"app.py", ".env.yaml", "notes.md"}
+
+
+def test_include_hidden_still_skips_third_party_directories(tmp_path):
+    # .git is hidden AND third-party. Asking for hidden files is not asking to
+    # scan the object store.
+    _tree(tmp_path)
+    found = list(iter_text_files([tmp_path], include_hidden=True))
+    assert not [p for p in found if set(p.parts) & SKIP_DIRS]
+
+
+def test_a_named_hidden_file_is_still_honoured(tmp_path):
+    # Naming .env.yaml explicitly is an instruction, exactly as for LICENSE.
+    _dotted(tmp_path)
+    target = tmp_path / ".env.yaml"
+    assert list(iter_text_files([target])) == [target]

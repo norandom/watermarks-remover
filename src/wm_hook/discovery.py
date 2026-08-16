@@ -38,6 +38,7 @@ def iter_text_files(
     *,
     exts: frozenset[str] = TEXT_EXTS,
     skip_dirs: frozenset[str] = SKIP_DIRS,
+    include_hidden: bool = False,
 ) -> Iterator[Path]:
     """Expand directories to their text files; pass explicit files through.
 
@@ -45,6 +46,11 @@ def iter_text_files(
     specific file is an instruction, not a suggestion, and second-guessing it
     would make the tool unusable on extensionless files like ``LICENSE``.
     Directory walks are filtered, because there the tool is guessing.
+
+    Dot files and dot directories are skipped unless ``include_hidden`` is set.
+    A scan of a project root otherwise reports on ``.claude/``, ``.kiro/`` and
+    every other tool's config, which is noise the user did not ask about and
+    did not write. ``--include-hidden-files`` turns them back on.
     """
     seen: set[Path] = set()
     for path in paths:
@@ -52,7 +58,10 @@ def iter_text_files(
             for child in sorted(path.rglob("*")):
                 if child.suffix.lower() not in exts or not child.is_file():
                     continue
-                if any(part in skip_dirs for part in child.relative_to(path).parts[:-1]):
+                rel = child.relative_to(path)
+                if any(part in skip_dirs for part in rel.parts[:-1]):
+                    continue
+                if not include_hidden and any(p.startswith(".") for p in rel.parts):
                     continue
                 if child not in seen:
                     seen.add(child)
