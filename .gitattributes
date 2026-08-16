@@ -1,0 +1,15 @@
+# The vendored files are byte-exact copies of upstream, verified by SHA-256 in
+# _vendor/VENDORED.json. Those hashes are computed over the LF-normalized bytes
+# git stores. On a checkout with core.autocrlf=true the working tree gets CRLF,
+# so `refresh.sh --check` hashes different bytes and reports DRIFT on files that
+# are pristine — disabling the one integrity control the vendoring rule has.
+#
+# Pin the vendored tree to LF so the working tree always matches the manifest.
+src/wm_hook/_vendor/** text eol=lf
+
+# The hook's own sources and the corpora it is tested against must not be
+# rewritten by git either: line endings are part of what this tool preserves,
+# and a CRLF-mangled fixture silently invalidates the fidelity tests.
+src/wm_hook/*.py text eol=lf
+tests/corpus/** -text
+*.sh text eol=lf

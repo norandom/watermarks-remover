@@ -2,13 +2,34 @@
 #   - repo: https://github.com/norandom/watermarks-remover
 #     rev: <tag>
 #     hooks:
-#       - id: wm-hook
+#       - id: wm-hook          # removal: rewrites files, fails the commit
+#       - id: wm-hook-check    # validation: reports only, never writes
 # language: python makes pre-commit `pip install .` into an isolated env, so
 # no other tooling is required on the committer's machine.
+#
+# Two ids, one entry point. wm-hook autofixes; wm-hook-check passes --check so
+# the same detection runs read-only. The check variant is pinned to the manual
+# stage so adopters who want both do not pay for the scan twice per commit:
+#   pre-commit run --hook-stage manual wm-hook-check --all-files
+
 - id: wm-hook
   name: strip AI provenance marks (Layer A + md/qmd frontmatter)
+  description: Rewrites files in place and fails the commit so you re-stage.
   entry: wm-hook
   language: python
+  # Explicit stages are required, not cosmetic. A hook with no stages: runs in
+  # EVERY stage, so `pre-commit run --hook-stage manual wm-hook-check` would
+  # also fire this autofix hook and rewrite the tree the CI gate was meant to
+  # only inspect. Verified against pre-commit 4.6.2.
+  stages: [pre-commit]
   # Explicit extension list instead of types: [text] — identify does not know
   # .qmd/.qml, so type filtering would silently skip Quarto/Qt files.
+  files: \.(md|markdown|mdx|qmd|qml|txt|text|py|js|ts|jsx|tsx|css|json|ya?ml|toml|csv|rs|go|c|h|cpp|hpp|java|rb|sh|sql|xml|cfg|ini|env|tex|bib|rst)$
+
+- id: wm-hook-check
+  name: detect AI provenance marks (read-only)
+  description: Reports files that carry marks; never modifies anything.
+  entry: wm-hook --check
+  language: python
+  stages: [manual]
   files: \.(md|markdown|mdx|qmd|qml|txt|text|py|js|ts|jsx|tsx|css|json|ya?ml|toml|csv|rs|go|c|h|cpp|hpp|java|rb|sh|sql|xml|cfg|ini|env|tex|bib|rst)$
