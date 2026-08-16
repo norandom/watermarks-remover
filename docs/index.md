@@ -52,6 +52,22 @@ Channel B is out of scope permanently. Removing a statistical watermark means
 running a paraphrase model over your prose and accepting whatever comes back.
 That has no place in a commit hook.
 
+!!! note "Channel B detection does exist, upstream"
+
+    The upstream project this borrows from,
+    [`guillaumemeyer/watermarks-remover`](https://github.com/guillaumemeyer/watermarks-remover),
+    ships `detect_text_watermark.py`: a harness that imports
+    [THU-BPM/MarkLLM](https://github.com/THU-BPM/MarkLLM) from a user-supplied
+    checkout at runtime and runs statistical detection.
+
+    Its own documentation carries the caveat that matters: detection is valid
+    only against the **same scheme configuration and keys used at generation**,
+    and it cannot certify that a vendor's detector would fail on a given text.
+    It is a research harness for controlled before/after experiments, not a
+    general-purpose detector.
+
+    Nothing in this repository invokes it.
+
 ## What this repository contains
 
 - **A pre-commit hook** that strips Channel A carriers and Channel C

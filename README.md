@@ -114,9 +114,14 @@ Catalogue: [Invisible characters](docs/reference/characters.md).
 | **B. Statistical** | which words the model chose | needs paraphrase | **never** |
 | **C. Declared metadata** | a field that says so | delete the field | frontmatter, containers |
 
-Channel B is permanently out of scope. Removing a statistical watermark means
-running a paraphrase model over your prose and accepting what comes back. That
-has no place in a commit hook.
+Channel B is permanently out of scope here. Removing a statistical watermark
+means running a paraphrase model over your prose and accepting what comes back.
+That has no place in a commit hook.
+
+Channel B *detection* does exist upstream, via a
+[MarkLLM](https://github.com/THU-BPM/MarkLLM) harness — but only against the
+same scheme config and keys used at generation, so it is a research instrument
+rather than a general detector. Nothing here invokes it.
 
 ---
 
