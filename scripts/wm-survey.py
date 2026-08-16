@@ -230,6 +230,88 @@ def scan_file(path: Path, root: Path) -> FileResult | None:
     return res
 
 
+# ---------------------------------------------------------------------------
+# Applicability
+# ---------------------------------------------------------------------------
+#
+# A detector that reports "clean" when it was never able to see anything is
+# worse than one that reports nothing at all: it manufactures confidence. Every
+# channel therefore declares what it can and cannot speak to, and a zero result
+# is qualified by the coverage that produced it.
+#
+# This is the same discipline as the carriers / explained / unexplained split.
+# There, conflating "found" with "suspicious" overstated by two orders of
+# magnitude. Here, conflating "no signal" with "wrong instrument" would do the
+# same in the opposite direction.
+
+CHANNELS = {
+    "layer_a": {
+        "name": "Layer A - invisible and format codepoints",
+        "detects": "zero-width runs, tag-block payloads, orphan variation "
+                   "selectors, private-use characters, bidi overrides, space "
+                   "homoglyphs",
+        "blind_to": "anything not encoded in the choice of codepoint",
+        "applicable_when": "always; every file is scannable",
+        "status": "operational",
+    },
+    "metadata": {
+        "name": "Channel C - declared provenance metadata",
+        "detects": "AI generator keys in YAML frontmatter",
+        "blind_to": "container metadata in PDF, DOCX, ODT, SVG and images, "
+                    "which this tool does not open",
+        "applicable_when": "markdown and Quarto files with frontmatter",
+        "status": "partial",
+    },
+    "statistical": {
+        "name": "Channel B - statistical token-sampling watermarks",
+        "detects": "nothing",
+        "blind_to": "everything in this channel",
+        "applicable_when": "never, with currently public information",
+        "status": "unavailable",
+        "why": "Detection requires the scheme and keys used at generation. "
+               "Anthropic states marking covers Claude Code but has not "
+               "published a detector. The exclusion of 'very short passages "
+               "with too little text for a reliable signal' indicates a "
+               "statistical rather than a codepoint mark, which a Layer A "
+               "scan cannot see by construction.",
+    },
+    "stylometric": {
+        "name": "Stylometry - AI cadence in prose",
+        "detects": "essay and marketing register markers",
+        "blind_to": "technical documentation, specifications, commit prose, "
+                    "and source code, where its markers do not occur",
+        "applicable_when": "long-form prose in an essay register",
+        "status": "not wired in",
+        "why": "Measured against upstream's scorer: 0.685 on AI marketing "
+               "prose, 0.029 on Claude-authored technical documentation. It "
+               "discriminates register, not authorship. Reporting its zero on "
+               "a technical corpus as 'clean' would be false confidence.",
+    },
+}
+
+
+def applicability(rep: dict) -> dict:
+    """What this run could and could not have detected."""
+    scanned = rep["files_scanned"]
+    channels = {k: dict(v) for k, v in CHANNELS.items()}
+    channels["layer_a"]["files_covered"] = scanned
+    channels["metadata"]["files_covered"] = rep.get("frontmatter_files", 0)
+    channels["statistical"]["files_covered"] = 0
+    channels["stylometric"]["files_covered"] = 0
+
+    operational = [k for k, v in channels.items() if v["status"] == "operational"]
+    return {
+        "channels": channels,
+        "operational_channels": operational,
+        "verdict": (
+            "A zero residual here means no deterministic Layer A carrier was "
+            "found. It does not mean the text was written by a human, and it "
+            "does not rule out a statistical watermark, which no publicly "
+            "available tool can currently detect."
+        ),
+    }
+
+
 def git(repo: Path, *args: str) -> str:
     try:
         r = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True,
@@ -310,6 +392,10 @@ def survey(root: Path, exclude: tuple[str, ...] = ()) -> dict:
             {"path": f.path, "count": f.unexplained, "detail": f.unexplained_detail[:5]}
             for f in sorted(with_unexplained, key=lambda x: -x.unexplained)[:20]
         ],
+        "frontmatter_files": sum(
+            1 for f in files if f.path.lower().endswith(
+                (".md", ".markdown", ".mdx", ".qmd"))
+        ),
         "attribution": attribute(root),
     }
 
@@ -336,6 +422,18 @@ def render(rep: dict) -> None:
             print(f"    {f['path']}  x{f['count']}")
             for d in f["detail"]:
                 print(f"        @{d['offset']:<7} {d['codepoint']} {d['name']} [{d['class']}]")
+    ap = rep["applicability"]
+    print("\n  what this run could detect:")
+    for key, ch in ap["channels"].items():
+        mark = {"operational": "[on ]", "partial": "[part]",
+                "unavailable": "[OFF]", "not wired in": "[OFF]"}[ch["status"]]
+        print(f"    {mark} {ch['name']}")
+        print(f"           covers {ch['files_covered']} file(s); blind to {ch['blind_to']}")
+        if ch.get("why"):
+            first = ch["why"].split(". ")[0]
+            print(f"           {first}.")
+    print(f"\n  {ap['verdict']}")
+
     a = rep["attribution"]
     print("\n  attribution (overt evidence only):")
     print(f"    config on disk              {', '.join(a['disk_markers']) or '(none)'}")
@@ -360,10 +458,13 @@ def main() -> int:
     )
     args = p.parse_args()
 
-    reports = [
-        survey(path.resolve(), tuple(args.exclude))
-        for path in args.paths if path.is_dir()
-    ]
+    reports = []
+    for path in args.paths:
+        if not path.is_dir():
+            continue
+        rep = survey(path.resolve(), tuple(args.exclude))
+        rep["applicability"] = applicability(rep)
+        reports.append(rep)
     if args.json:
         json.dump(reports, sys.stdout, indent=2, ensure_ascii=False)
         sys.stdout.write("\n")

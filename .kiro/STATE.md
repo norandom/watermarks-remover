@@ -82,20 +82,58 @@ public detectors and keys, no tool can honestly certify."*
 So a 0% Layer A result on Claude Code output is **evidence about the
 mechanism**, not evidence of absence.
 
-## Detection work worth doing, in order
+## Detection work
 
-1. **Applicability reporting.** The stylometry result says *clean* when it
-   should say *outside my calibration*. Same principle as the
-   carriers/explained/unexplained split that already caught 15 false positives.
-   A detector that cannot distinguish "no signal" from "wrong instrument"
-   manufactures false confidence. Highest value, and ours to fix.
-2. **Layer A recall benchmark.** Synthetic corpus of every published edit-based
-   technique, measured recall. Turns "we found nothing" into "we detect N of M
-   known techniques".
+1. **Applicability reporting — DONE.** The survey now declares, per channel,
+   what it could and could not have detected, and qualifies every zero. Two of
+   four channels report OFF. A zero residual is no longer presentable as
+   "clean".
+2. **Layer A recall benchmark — next.** Synthetic corpus of every published
+   edit-based technique, measured recall. Turns "we found nothing" into "we
+   detect N of M known techniques".
 3. **Vendor `score_stylometry.py`** as a fifth `_vendor` file with its own
-   survey channel, never conflated with carrier findings.
+   survey channel, never conflated with carrier findings. Note its measured
+   register limitation before wiring it in.
 4. **Watch item:** Anthropic's "forthcoming technical documentation" on
    detection. That is the trigger for any Layer B work.
+
+## The discrimination study: built, then dropped
+
+A labelled corpus was assembled and the study was **deliberately not run**,
+because the result would have been confounded. Recorded so it is not
+rediscovered.
+
+**Corpus that exists** (scripts in the session scratchpad, not committed):
+
+- 300 wholly-Claude-authored files — every commit touching them carries a
+  Claude trailer. 195 prose (221k words), 105 code (103k words).
+- 2,400 pre-LLM human commit messages from `git/git` 2018-2019, 166k words.
+- 261 Claude-trailered commit messages, 28k words.
+
+**Why it was dropped.** 87k of the 221k Claude prose words are this
+repository's kiro specs, and 59k more are from `Skills`. A classifier fitted to
+that learns the spec template and one developer's toolchain, not Claude. It
+would score well on held-out data from these repos and collapse elsewhere.
+
+**The deeper reason.** Every style-based method measures *register*, which is a
+property of the workflow. That is exactly why upstream's scorer returns 0.685
+on marketing prose and 0.029 on Claude-authored technical docs.
+
+**Commit-message length is process, not authorship.** Measured medians:
+
+| Corpus | Median words | Driver |
+| --- | --- | --- |
+| `git/git` 2019 | 50 | no ticket system; the message is the documentation |
+| CPython, curl | 16 | messages reference issue numbers |
+| this owner, pre-AI | 3 | ticket-driven, context lived in the ticket |
+| Claude here | 91 | no ticket, and asked to explain reasoning |
+
+A 2019 git contributor and Claude both write long messages for the same
+structural reason. "Verbose implies AI" is false.
+
+**If revived**, `git/git` is the right control precisely because it is
+process-matched — message-as-documentation on both sides — and the file-level
+confound must be handled by holding out whole repositories, not files.
 
 ## Environment notes
 
