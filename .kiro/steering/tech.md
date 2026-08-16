@@ -60,6 +60,22 @@ free. `container_meta` and `common` mutate process stdio to UTF-8 on import and
 pull `image_meta` with them. Production code should import the former freely and
 avoid the latter; tests may import anything.
 
+### WSL: keep to an absolute minimum
+
+Use Windows tooling — `uv`, PowerShell, Windows `git` — for everything that can
+run on Windows. WSL is reserved for the single case that genuinely cannot:
+running the POSIX-gated write-path assertions on Linux, via
+`scripts/test-linux.sh` and the `Debian` distro. Once CI runs the suite on a
+Linux runner, even that becomes optional locally.
+
+**Never use the `Debian-MW` distro. It is reserved.**
+
+This is not only a preference. Querying git through WSL against a `/mnt/c` path
+produced a wrong answer during this project — two clean repositories were
+reported as having uncommitted changes, and that error reached the
+documentation before being caught. Cross-boundary tooling has its own failure
+modes; do not invoke it where the native tool works.
+
 ### Type safety
 `from __future__ import annotations` throughout; PEP 604 unions
 (`str | None`). No type checker is currently wired in.
