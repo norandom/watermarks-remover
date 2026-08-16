@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from wm_hook.flags import (
+from wm_hook.core.flags import (
     MAX_TAG_SPEC,
     MIN_TAG_SPEC,
     TAG_BASE,
@@ -110,36 +110,3 @@ class TestCodepointClassification:
     ])
     def test_everything_else_is_rejected(self, cp: int) -> None:
         assert not is_tag_spec_codepoint(cp)
-
-
-def _vendored_predicate():
-    """The upstream check, for divergence pinning.
-
-    Importing ``wm_hook._tables`` first is not incidental: it is the gateway
-    that puts ``_vendor`` on ``sys.path``, and without it this import succeeds
-    only when some earlier test happened to establish the path. Depending on
-    collection order is how a suite grows tests that pass together and fail
-    alone.
-
-    Production code may not import vendored decision functions. Tests may, and
-    only to measure divergence.
-    """
-    import wm_hook._tables  # noqa: F401  (imported for its sys.path effect)
-    from text_unicode import _valid_flag_tag_indices
-
-    return _valid_flag_tag_indices
-
-
-class TestAgainstTheVendoredImplementation:
-    """Pin the divergence, so an upstream refresh cannot silently undo it."""
-
-    def test_vendored_accepts_what_we_reject(self) -> None:
-        vendored = _vendored_predicate()
-        payload = BASE + tag("secretpayloaddata") + TERM
-        assert vendored(payload), "precondition: upstream exempts the payload"
-        assert valid_flag_tag_indices(payload) == set()
-
-    def test_both_accept_a_real_flag(self) -> None:
-        vendored = _vendored_predicate()
-        real = seq("gbsct")
-        assert vendored(real) == valid_flag_tag_indices(real)

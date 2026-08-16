@@ -23,7 +23,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "src" / "wm_hook" / "_vendor"))
+sys.path.insert(0, str(REPO / "src" / "wm_hook" / "core"))
 sys.path.insert(0, str(Path(__file__).parent))
 
 from text_unicode import clean_text, inspect_text  # noqa: E402

@@ -1,6 +1,6 @@
 """Replace a file's contents without changing anything else about the file.
 
-This module exists because the vendored writer changes something else. Its
+This module exists because core's writer changes something else. Its
 ``safe_write_bytes`` chmods the temporary to ``0o666 & ~umask``, so every
 rewritten file comes back ``0644``. The hook's ``files:`` pattern matches
 ``.sh`` and ``.py``, git tracks the execute bit, and the result is that
@@ -8,16 +8,15 @@ cleaning an executable script silently adds a ``100755 -> 100644`` mode change
 to the commit -- an unrelated change, which Requirement 8 exists to forbid.
 
 The fix is one line of intent: capture the original's mode and restore *that*
-instead of a umask default. Everything around it is kept as the vendored
-version had it, because those parts were already right -- a temporary in the
+instead of a umask default. Everything around it is kept as the original
+had it, because those parts were already right -- a temporary in the
 destination directory (so the move is a same-filesystem rename and therefore
 atomic), ``fsync`` before the move, ``os.replace`` as the commit point, and a
 refusal to write through a symbolic link.
 
-The vendored function is not called or imported here. Importing
-``_vendor.common`` reconfigures process stdin/stdout/stderr to UTF-8 as a side
-effect (design.md "Allowed Dependencies"), and owning the write path is the
-point of this module.
+``core.common`` is not imported here: importing it reconfigures process
+stdin/stdout/stderr to UTF-8 as a side effect, and owning the write path is
+the point of this module.
 """
 
 from __future__ import annotations

@@ -1,0 +1,35 @@
+watermarks-remover
+Copyright (c) 2026 watermarks-remover contributors
+
+This product includes software originally developed in the
+watermarks-remover project by Guillaume Meyer:
+
+    https://github.com/guillaumemeyer/watermarks-remover
+    Licensed under the MIT License
+
+The modules in src/wm_hook/core/ began as copies of that project's
+service/scripts/ directory. At the point of copying they were byte-identical
+to upstream commit:
+
+    fcebf533583d7a313b348dbe421f3b4b17163b66
+    committed 2026-08-16
+
+with these SHA-256 digests over the LF-normalised bytes:
+
+    common.py          c156150d35f74f8421b6309ce0b9953fe20223a66f8ef89efb3e7e43e9406b68
+    text_unicode.py    166caa04ab0f9fecc5d83d1931bb6b7213e2e17dedaa02fd6213ca4293640e98
+    container_meta.py  c8507beba9e5c38ce7467f72104bf40e49bc5d89b0508e4f333e39a4baba7c3d
+    image_meta.py      3e222cd1a66fef9b454080e88cf11b04e7c596f83dfb8d970a62a47095386b28
+
+Those digests are recorded so anyone can reconstruct the starting point and
+diff against it. They are a fact about history, not a synchronisation
+contract.
+
+This is a FORK. The code has since diverged and will continue to. There is no
+tracking of upstream, no re-pull, and no attempt to preserve byte-exactness.
+Notably, image_meta.py has been removed entirely and container_meta.py reduced
+to its Markdown frontmatter handling, because this project's scope is text and
+Unicode carriers.
+
+Upstream remains the better choice for image, C2PA and pixel-domain work,
+which this project does not attempt.

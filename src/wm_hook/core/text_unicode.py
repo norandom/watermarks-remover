@@ -317,23 +317,14 @@ def _is_variation_selector(cp: int) -> bool:
     return cp in _VS_SUPPLEMENT or 0xFE00 <= cp <= 0xFE0F or 0x180B <= cp <= 0x180D
 
 
-def _valid_flag_tag_indices(text: str) -> set[int]:
-    """Indices in complete subdivision-flag tag sequences."""
-    valid: set[int] = set()
-    i = 0
-    while i < len(text):
-        if ord(text[i]) != 0x1F3F4:  # waving black flag
-            i += 1
-            continue
-        j = i + 1
-        while j < len(text) and 0xE0020 <= ord(text[j]) <= 0xE007E:
-            j += 1
-        if j > i + 1 and j < len(text) and ord(text[j]) == 0xE007F:
-            valid.update(range(i + 1, j + 1))
-            i = j + 1
-        else:
-            i += 1
-    return valid
+from flags import valid_flag_tag_indices as _valid_flag_tag_indices  # noqa: E402
+
+# The original implementation accepted the entire printable tag range at any
+# length, which made the subdivision-flag exemption the widest covert channel
+# in the tool: 1535 bits per kilobyte of host text, 100% survival, 64% of all
+# residual capacity. `flags.py` applies the TR51 grammar instead -- a tag spec
+# of 2 to 6 characters from [0-9a-z], terminated by U+E007F. See NOTICE; this
+# is a fork, so the fix lives in the source rather than in a wrapper.
 
 
 def _valid_bidi_embedding_indices(text: str) -> set[int]:

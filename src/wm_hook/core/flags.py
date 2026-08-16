@@ -1,12 +1,12 @@
 """Bounded validation of emoji tag sequences.
 
-The vendored cleaner exempts "complete subdivision-flag sequences" from tag
-stripping, so that the Scotland flag survives. Its check is too permissive in
-two independent ways, and together they turn the exemption into the widest
-covert channel the tool leaves open -- measured at 1535 bits per kilobyte of
-host text, 64% of all residual capacity, with 100% survival.
+``text_unicode`` exempts "complete subdivision-flag sequences" from tag
+stripping, so that the Scotland flag survives. The check it inherited was too
+permissive in two independent ways, and together they turned the exemption
+into the widest covert channel the tool left open -- measured at 1535 bits per
+kilobyte of host text, 64% of all residual capacity, with 100% survival.
 
-The vendored predicate accepts a run as valid when::
+The original predicate accepted a run as valid when::
 
     0xE0020 <= codepoint <= 0xE007E     # the whole printable tag range
     and length >= 1                     # no upper bound at all
@@ -29,10 +29,11 @@ close the channel: 36 symbols over at most 6 positions caps a sequence at
 about 31 bits total, and every one of those bits has to spell a plausible
 subdivision code.
 
-This module is a slice of ``watermark-removal`` task 2.4(b). It is deliberately
-standalone -- pure sequence validation, no dependency on segmentation or the
-classifier -- so that the highest-capacity hole can be closed without waiting
-for the rest of that task.
+``text_unicode`` imports this in place of its original predicate, so the bound
+is live rather than pending. Standalone by design -- pure sequence validation,
+no dependency on segmentation or policy -- which is what let the
+highest-capacity hole close ahead of the rest of ``watermark-removal`` task
+2.4(b).
 """
 
 from __future__ import annotations

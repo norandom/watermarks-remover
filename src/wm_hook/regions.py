@@ -36,7 +36,7 @@ Three decisions are worth stating outright, because each one is a defect fix:
   remove, so it does not hand back a coarse per-block flag that would be wrong
   for most of the block.
 
-Deliberately dependency-free: stdlib only, no policy, no vendored tables
+Deliberately dependency-free: stdlib only, no policy, no codepoint tables
 (design.md "Components and Interfaces", ``regions.py`` -- Key Dependencies:
 none). Segmentation is about *where things are*, and nothing about where a
 character sits depends on which transforms an adopter enabled.
@@ -362,7 +362,7 @@ def _is_invisible(char: str) -> bool:
     controls and the tag block -- everything that can sit in front of a
     delimiter without showing. Category rather than an enumerated table, so a
     newly assigned format character is tolerated without a change here, and
-    stdlib rather than the vendored codepoint tables, which segmentation must
+    stdlib rather than core's codepoint tables, which segmentation must
     not depend on.
     """
     return unicodedata.category(char) == "Cf"

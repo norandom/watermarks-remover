@@ -3,9 +3,9 @@
 
 Strips Layer A invisible-Unicode carriers (ZWSP, bidi controls, tag chars,
 exotic spaces) from any text file, plus AI YAML-frontmatter keys from Markdown
-and Quarto files. The cleaning machinery is vendored byte-exact from this
-repo's service/scripts/ (see _vendor/VENDORED.json); only the batch/commit
-plumbing lives here.
+and Quarto files. The cleaning modules live in core/ and originated in
+guillaumemeyer/watermarks-remover; see NOTICE. This is a fork, not a vendored
+dependency, and core/ is edited freely.
 
 Autofix semantics for pre-commit: changed files are rewritten in place
 (atomic, no .bak — git is the backup) and the exit code is 1, so the commit
@@ -41,15 +41,14 @@ import sys
 from importlib import metadata
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "_vendor"))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "core"))
 
 from common import MAX_INPUT_BYTES, eprint, looks_binary, safe_write_text  # noqa: E402
-from container_meta import clean_markdown  # noqa: E402
+from frontmatter import clean_markdown  # noqa: E402
 from text_unicode import clean_text  # noqa: E402
 
-# Upstream's markdown routing covers .md/.markdown/.mdx; the hook adds .qmd
-# (Quarto), which has the same YAML frontmatter convention. This is a local
-# routing decision — the vendored files themselves stay byte-exact.
+# Markdown routing covers .md/.markdown/.mdx, plus .qmd (Quarto), which shares
+# the YAML frontmatter convention.
 MARKDOWN_EXTS = {".md", ".markdown", ".mdx", ".qmd"}
 
 

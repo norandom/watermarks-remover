@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "watermarks-hook"
 version = "0.1.0"
-description = "Pre-commit hook that strips AI provenance marks from text (Layer A Unicode + Markdown/Quarto frontmatter), vendored from watermarks-remover"
+description = "Pre-commit hook that strips AI provenance marks from text: Layer A Unicode carriers and Markdown/Quarto frontmatter"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 
@@ -22,11 +22,11 @@ dev = ["pytest>=8.0"]
 package-dir = { "" = "src" }
 packages = ["wm_hook"]
 
-# The vendored modules are sys.path-imported by cli.py at runtime (kept
-# byte-exact with service/scripts/), not imported as package modules, so they
+# core/ is sys.path-imported by cli.py at runtime so its modules resolve by
+# bare name, not as package modules, so they
 # ship as package data.
 [tool.setuptools.package-data]
-wm_hook = ["_vendor/*.py", "_vendor/VENDORED.json"]
+wm_hook = ["core/*.py"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
