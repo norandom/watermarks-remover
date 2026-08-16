@@ -7,7 +7,9 @@ correct text. This page lists every one we have reproduced.
 data is present, use one of those. Then nothing on this page can happen to your
 files.
 
-Measured 2026-08-16 against the released version, v0.1.0a1. Every case here
+Measured 2026-08-16 against v0.1.0a1. The cleaning code is byte-for-byte
+unchanged in v0.1.0a2, so every result below still holds. It is not re-dated,
+because it was not re-run. Every case here
 comes from running the tool and reading the bytes afterwards.
 
 ## Triage in ten seconds

@@ -20,7 +20,7 @@ hook ids.
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/norandom/watermarks-remover
-    rev: v0.1.0a1
+    rev: v0.1.0a2
     hooks:
       - id: wm-hook              # rewrites files, fails the commit
         exclude: '^(tests/fixtures/|locales/|site/|vendor/)'

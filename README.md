@@ -5,7 +5,7 @@ removes it.
 
 Documentation: <https://norandom.github.io/watermarks-remover/>
 
-[![release v0.1.0a1 pre-release](https://img.shields.io/badge/release-v0.1.0a1%20pre--release-orange)](https://github.com/norandom/watermarks-remover/releases/tag/v0.1.0a1)
+[![release v0.1.0a2 pre-release](https://img.shields.io/badge/release-v0.1.0a2%20pre--release-orange)](https://github.com/norandom/watermarks-remover/releases/tag/v0.1.0a2)
 [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
 > Measured 2026-08-16. Provided without warranty of any kind. This is a
@@ -62,7 +62,7 @@ To keep the command on your PATH instead, run
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/norandom/watermarks-remover
-    rev: v0.1.0a1
+    rev: v0.1.0a2
     hooks:
       - id: wm-hook              # rewrites files, fails the commit
         exclude: '^(site/|vendor/|locales/)'
@@ -71,7 +71,7 @@ repos:
 
 The install commands above deliberately track the default branch, so you always
 get the newest code. Pin them yourself if you want a fixed version: add
-`@v0.1.0a1` to the `git+` URL, or a tag to the raw script URL.
+`@v0.1.0a2` to the `git+` URL, or a tag to the raw script URL.
 
 `rev:` is the exception and stays pinned. pre-commit caches by rev and its whole
 point is that everyone on the team runs the same version, so it warns on a
@@ -130,7 +130,7 @@ AI-written and scans clean:
 
 ## Status
 
-- Pre-release. v0.1.0a1 is a GitHub pre-release, with a wheel and an sdist
+- Pre-release. v0.1.0a2 is a GitHub pre-release, with a wheel and an sdist
   attached. Development follows the specifications in `.kiro/`.
 - The rewriting hook has defects that damage correct text: Devanagari spelling,
   CJK typography and some YAML files. Every defect we reproduced is listed with

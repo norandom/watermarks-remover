@@ -34,7 +34,7 @@ Install (no system Python needed if you have uv):
 env itself, so this needs nothing preinstalled beyond pre-commit):
 
     - repo: https://github.com/norandom/watermarks-remover
-      rev: v0.1.0a1
+      rev: v0.1.0a2
       hooks:
         - id: wm-hook
 

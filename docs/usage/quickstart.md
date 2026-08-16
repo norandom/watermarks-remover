@@ -11,7 +11,7 @@ You do not need to activate a virtualenv. Pick one option.
 
     ```console
     $ uvx --from 'git+https://github.com/norandom/watermarks-remover' wm-hook --version
-    wm-hook 0.1.0a1
+    wm-hook 0.1.0a2
     ```
 
     `uvx` builds a throwaway environment and deletes it again.
@@ -30,7 +30,7 @@ You do not need to activate a virtualenv. Pick one option.
     # .pre-commit-config.yaml
     repos:
       - repo: https://github.com/norandom/watermarks-remover
-        rev: v0.1.0a1
+        rev: v0.1.0a2
         hooks:
           - id: wm-hook
     ```
@@ -136,7 +136,7 @@ after   # Release 2.4.0
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/norandom/watermarks-remover
-    rev: v0.1.0a1
+    rev: v0.1.0a2
     hooks:
       - id: wm-hook              # rewrites files, fails the commit
         exclude: '^(tests/fixtures/|locales/|site/|vendor/)'
