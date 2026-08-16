@@ -45,17 +45,10 @@ from wm_hook.carriers import carrier_class, explain  # noqa: E402
 from wm_hook.payload import carrier_signature, extract  # noqa: E402
 from wm_hook.verdict import LEVEL_ORDER, classify  # noqa: E402
 
-TEXT_EXTS = {
-    ".md", ".markdown", ".mdx", ".qmd", ".rmd", ".txt", ".rst", ".tex",
-    ".py", ".ps1", ".psm1", ".psd1", ".sh", ".bash", ".zsh",
-    ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".css", ".html",
-    ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".xml",
-    ".rs", ".go", ".c", ".h", ".cpp", ".hpp", ".java", ".rb", ".sql", ".po",
-}
-SKIP_DIRS = {
-    ".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build",
-    ".pytest_cache", "target", ".mypy_cache", ".ruff_cache", ".tox", "site",
-}
+# Shared with the CLI so a survey and a --detect run cover the same files.
+# Two copies of this list would drift, and the drift would silently show up as
+# a difference in findings rather than as an error.
+from wm_hook.discovery import SKIP_DIRS, TEXT_EXTS  # noqa: E402
 
 # Overt agent artifacts. Each tool writes these into a project itself.
 DISK_MARKERS: dict[str, tuple[str, ...]] = {

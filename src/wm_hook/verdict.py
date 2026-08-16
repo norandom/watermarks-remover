@@ -35,11 +35,12 @@ the input here, and structure is what promotes a residual to a finding:
                         deliberate
     decodability        the payload reads as ASCII
 
-Base rates come from the dated baseline (2026-08-16): 0 unexplained carriers
-across 1,268 text files in 11 repositories, several of them heavily
-agent-authored. By the rule of three that bounds the per-file false-positive
-rate at roughly 0.24% with 95% confidence, and it puts sensitivity to AI
-*authorship* at approximately zero. Specific, not sensitive.
+Base rates come from the dated corpus (2026-08-16): zero carriers established
+across 1,155 text files in 8 repositories, scanned unexcluded. By the rule of
+three that bounds the per-file false-positive rate at 0.26% with 95%
+confidence. Two of those repositories were written almost entirely by coding
+agents and both scan clean, which puts sensitivity to AI *authorship* at
+approximately zero. Specific, not sensitive.
 """
 
 from __future__ import annotations
@@ -60,11 +61,23 @@ PAYLOAD = "payload"
 
 LEVEL_ORDER = (NONE, BENIGN, ANOMALY, CARRIER, PAYLOAD)
 
-#: Files scanned in the dated baseline with zero unexplained carriers.
-BASELINE_FILES = 1268
 BASELINE_DATE = "2026-08-16"
-#: Rule-of-three 95% upper bound on the per-file false-positive rate.
-FALSE_POSITIVE_BOUND_PCT = round(100 * 3 / BASELINE_FILES, 2)
+
+#: The original Layer A survey: 11 repositories, zero private-use codepoints.
+#: Cited only for the private-use claim, which is what it measured.
+BASELINE_FILES = 1268
+
+#: The verdict false-positive corpus: 8 external repositories scanned
+#: unexcluded, zero carriers established. A different measurement from the one
+#: above, so it gets a different constant -- sharing one would let the two
+#: numbers drift into each other silently, which in a project that reports
+#: rates is the failure mode that matters most.
+FP_CORPUS_FILES = 1155
+FP_CORPUS_REPOS = 8
+
+#: Rule-of-three 95% upper bound on the per-file false-positive rate, given
+#: zero observed positives in FP_CORPUS_FILES trials.
+FALSE_POSITIVE_BOUND_PCT = round(100 * 3 / FP_CORPUS_FILES, 2)
 
 
 @dataclass(frozen=True)
@@ -130,8 +143,9 @@ class Verdict:
             "No covert carrier. This is NOT evidence that a human wrote the "
             "text. A statistical watermark leaves no codepoint trace, so an "
             f"AI-written file is expected to look like this: the {BASELINE_DATE} "
-            f"baseline found zero carriers across {BASELINE_FILES} files, "
-            "including repositories written almost entirely by coding agents."
+            f"corpus established zero carriers across {FP_CORPUS_FILES} files "
+            f"in {FP_CORPUS_REPOS} repositories, two of which were written "
+            "almost entirely by coding agents."
         )
 
     def to_dict(self) -> dict:

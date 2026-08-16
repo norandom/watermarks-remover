@@ -61,6 +61,7 @@ from common import MAX_INPUT_BYTES, eprint, looks_binary, safe_write_text  # noq
 from text_unicode import clean_text  # noqa: E402
 
 from wm_hook import verdict as _verdict  # noqa: E402
+from wm_hook.discovery import iter_text_files  # noqa: E402
 
 
 def _version() -> str:
@@ -151,6 +152,12 @@ def detect(paths: list[Path], *, as_json: bool, verbose: bool) -> int:
         for line in lines:
             print(line)
         scanned = len(paths) - errors
+        if not scanned:
+            # Never print a reassuring summary for a scan that did not happen.
+            # "0 of 0 files are clean" is the manufactured confidence this
+            # project exists to avoid, in its purest form.
+            eprint("wm-hook: no text files were scanned; nothing was checked")
+            return 2
         print(f"\n{hits} of {scanned} file(s) carry a covert carrier.")
         if not hits:
             print(
@@ -169,7 +176,10 @@ def main() -> int:
         epilog="exit: 0 = all clean, 1 = files were (or would be) modified, 2 = errors. "
                "With --detect, 1 means a covert carrier was found.",
     )
-    p.add_argument("paths", nargs="+", type=Path, help="files to clean in place")
+    p.add_argument(
+        "paths", nargs="+", type=Path,
+        help="files to clean in place, or directories to walk for text files",
+    )
     p.add_argument(
         "--check",
         action="store_true",
@@ -188,12 +198,16 @@ def main() -> int:
     p.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
     args = p.parse_args()
 
+    # A directory becomes its text files. pre-commit always passes an explicit
+    # list, so this only ever fires for a human pointing at a project.
+    paths = list(iter_text_files(args.paths))
+
     if args.detect:
-        return detect(args.paths, as_json=args.json, verbose=args.verbose)
+        return detect(paths, as_json=args.json, verbose=args.verbose)
 
     changed = 0
     errors = 0
-    for path in args.paths:
+    for path in paths:
         status, detail = clean_one(path, check=args.check)
         if status == "clean":
             continue

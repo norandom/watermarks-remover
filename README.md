@@ -202,6 +202,32 @@ Details, worked examples and the full false-positive table:
 
 ## Usage
 
+### Scan another project
+
+No virtualenv to activate — point it at a directory and it walks the tree,
+skipping `.git`, `node_modules`, `.venv`, `dist`, `build` and a built `site/`:
+
+```bash
+# no install at all
+uvx --from git+https://github.com/norandom/watermarks-remover \
+    wm-hook --detect /path/to/project
+
+# or from a checkout, from any directory
+uv run --project ~/Source/watermarks-remover wm-hook --detect /path/to/project
+
+# or put it on your PATH once
+uv tool install git+https://github.com/norandom/watermarks-remover
+wm-hook --detect /path/to/project
+```
+
+`--detect` never writes. **Bare `wm-hook <dir>` rewrites the tree in place** —
+that is the autofix path, so run it under git on a clean tree and read the
+diff, after [What breaks](docs/reference/breakage.md).
+
+Exit codes: `0` clean, `1` a carrier was established, `2` unreadable input or
+no text files found. That last one is an error on purpose — "0 of 0 files are
+clean" is a reassuring summary for a scan that never happened.
+
 ### Survey a tree
 
 ```bash

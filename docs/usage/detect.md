@@ -3,14 +3,77 @@
 This is the one question in the project that is actually tractable, and
 `wm-hook --detect` is the answer to it.
 
+## Running it on another project
+
+You do **not** need to activate this repository's virtualenv. Sourcing
+`.venv` works, but it means every future invocation depends on remembering to
+do it, and on your shell's current directory. Prefer one of these:
+
+=== "No install (recommended)"
+
+    ```bash
+    uvx --from git+https://github.com/norandom/watermarks-remover \
+        wm-hook --detect /path/to/project
+    ```
+
+    `uvx` builds a throwaway environment and throws it away again. Nothing is
+    added to your system or to the target project.
+
+=== "From a checkout, anywhere"
+
+    ```bash
+    uv run --project ~/Source/watermarks-remover wm-hook --detect /path/to/project
+    ```
+
+    `--project` points at this repository while your shell stays wherever it
+    is, so there is nothing to activate and nothing to deactivate.
+
+=== "Installed on your PATH"
+
+    ```bash
+    uv tool install git+https://github.com/norandom/watermarks-remover
+    wm-hook --detect /path/to/project
+    ```
+
+    Then `wm-hook` is just a command. Update with `uv tool upgrade`.
+
+=== "Activated venv"
+
+    ```bash
+    source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
+    wm-hook --detect /path/to/project
+    ```
+
+    Works, and is the option most likely to leave you wondering later why
+    `wm-hook` is not found.
+
+**Directories are walked.** Point it at a project root and it finds the text
+files itself, skipping `.git`, `node_modules`, `.venv`, `dist`, `build`,
+`target` and a built `site/`. A file named explicitly is always scanned,
+extension or not — asking for `LICENSE` is an instruction, not a suggestion.
+
 ```bash
-wm-hook --detect FILE...          # human-readable
-wm-hook --detect --json FILE...   # machine-readable
-wm-hook --detect -v FILE...       # report clean files too
+wm-hook --detect .                # this project
+wm-hook --detect src docs         # several roots
+wm-hook --detect --json . > r.json
+wm-hook --detect -v src           # list clean files too
 ```
 
+!!! warning "`--detect` never writes. Bare `wm-hook` does."
+
+    `wm-hook /path/to/project` **rewrites the tree in place**. That is the
+    autofix path and it is what the pre-commit hook runs. Use `--detect` to
+    look, `--check` to see what would change, and neither unless you have read
+    [What breaks](../reference/breakage.md) — the cleaner is known to damage
+    Devanagari orthography and CJK typography.
+
+    Run it under git, on a clean tree, and read the diff.
+
 Exit codes: `0` no covert carrier established, `1` at least one file carries
-one, `2` a file could not be read.
+one, `2` a file could not be read **or no text files were found at all**. That
+last case is an error on purpose: reporting "0 of 0 files are clean" for a scan
+that never happened is the manufactured confidence this whole project is built
+to avoid.
 
 ## The test is one-sided
 
