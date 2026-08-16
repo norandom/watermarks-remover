@@ -40,22 +40,29 @@ markdown_extensions:
       permalink: true
   - pymdownx.details
   - pymdownx.superfences
+  # Required by the "=== " install tabs in usage/quickstart.md and usage/detect.md.
+  # Without it those blocks render as literal "=== " text, not as tabs.
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.highlight:
       anchor_linenums: true
 
 nav:
   - Home: index.md
-  - The experiment:
-      - What we measured: experiment/baseline.md
+  - Quickstart: usage/quickstart.md
+  - Using it:
+      - Detect carriers: usage/detect.md
+      - The pre-commit hook: usage/hook.md
+      - Sign your own text: usage/signing.md
+      - Survey a tree: usage/survey.md
+  - What we found:
+      - Results: experiment/baseline.md
+      - What it means: experiment/what-it-means.md
       - Method: experiment/method.md
   - Reference:
       - Invisible characters: reference/characters.md
-      - Before and after: reference/examples.md
       - What breaks: reference/breakage.md
-  - Using it:
-      - The hook: usage/hook.md
-      - Is a carrier present?: usage/detect.md
-      - The survey: usage/survey.md
+      - Before and after: reference/examples.md
   - Limits and disclaimer: disclaimer.md
 
 extra:

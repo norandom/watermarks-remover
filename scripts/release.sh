@@ -79,7 +79,11 @@ echo "  pyproject and tag agree on $VERSION"
 # version. So it is a gate rather than a checklist item.
 
 step "documentation pins this version"
-PINNED=(README.md docs/usage/hook.md docs/usage/detect.md
+# The pages that actually tell someone what to install. detect.md deliberately
+# is not one of them any more: it links to the quickstart rather than repeating
+# install instructions, and listing it here would force a version string into a
+# page that has no reason to carry one.
+PINNED=(README.md docs/usage/quickstart.md docs/usage/hook.md
         .pre-commit-hooks.yaml src/wm_hook/cli.py)
 for f in "${PINNED[@]}"; do
     [ -f "$f" ] || fail "$f is missing"

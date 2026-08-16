@@ -29,7 +29,7 @@ Its only sanctioned modern use is subdivision flag sequences: `U+1F3F4`
 followed by 2–6 tag letters and terminated by `U+E007F CANCEL TAG`. That is how
 `🏴󠁧󠁢󠁳󠁣󠁴󠁿` is encoded.
 
-Anywhere else, a tag character is contraband. A whole readable string can be
+Anywhere else, a tag character does not belong. A whole readable string can be
 carried invisibly, and it survives copy and paste.
 
 !!! danger "The bounded-payload subtlety"
@@ -52,8 +52,8 @@ character. This is the "emoji smuggling" scheme.
 The legitimate uses are real and common: `ℹ️` is `U+2139` plus VS16, and
 Japanese personal names depend on ideographic variants of kanji such as 辻 and 葛.
 
-**The discriminator is run length.** One selector after a legal base is
-orthography. A run of them on the same base is a payload, because no base takes
+**Run length is what tells the two apart.** One selector after a legal base is
+spelling. A run of them on the same base is a payload, because no base takes
 two.
 
 ## Private-use areas
@@ -107,14 +107,15 @@ combining grapheme joiner `U+034F`, the invisible math operators
 `U+2061`–`U+2064`, interlinear annotation `U+FFF9`–`U+FFFB`, and the deprecated
 controls `U+206A`–`U+206F`.
 
-Treating the category as the rule rather than enumerating members means new
-assignments are covered without a code change. The cost is that a handful of
-`Cf` characters are ordinary orthography in Arabic, Syriac and Kaithi, and need
-naming as exceptions.
+We use the whole category as the rule instead of listing each member. New
+Unicode assignments are then covered without a code change.
+
+The cost is that a few `Cf` characters are ordinary spelling in Arabic, Syriac
+and Kaithi. Those have to be named as exceptions.
 
 ## What does *not* indicate AI authorship
 
-Worth stating plainly, because these get cited as tells and are not:
+People cite these as signs of AI writing. They are not:
 
 - **Em dashes, curly quotes, ellipsis characters.** Typography, not marks. No
   detector should treat them as evidence, and this project does not touch them.

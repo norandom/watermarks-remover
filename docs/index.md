@@ -1,153 +1,91 @@
 # watermarks-remover
 
-An experiment in measuring how much invisible AI provenance marking is actually
-present in real codebases, and removing it losslessly where it is.
+`wm-hook` finds and removes invisible Unicode characters that hide data in text.
 
-!!! warning "Read this before anything else"
+## Why this exists
 
-    This is a measurement experiment, not an evasion tool. It exists to answer
-    a question with data: *are coding agents marking their output, and if so,
-    how much and how detectably?*
+Coding agents now write a large share of the files in a normal repository. You
+read the visible text, and you approve it.
 
-    Provided **without warranty of any kind**. See
-    [Limits and disclaimer](disclaimer.md).
+Some Unicode characters render as nothing at all. A zero-width space or a
+private-use codepoint can sit between two letters and carry bits. Several tools
+claim to strip "AI watermarks" from text, so people assume the marks are there.
 
-## The headline result
+Are any actually hidden in your files?
 
-**Baseline measured 2026-08-16**, across 11 repositories and 1,268 text files
-on one developer workstation.
+One command answers that. The rest of this site explains what the answer is
+worth. A positive result and a negative result mean very different things.
 
-| Finding | Result |
+## Try it in 60 seconds
+
+`--detect` only reads. It never changes a file.
+
+```bash
+uvx --from git+https://github.com/norandom/watermarks-remover@v0.1.0a1 wm-hook --detect .
+```
+
+Real output, from running that in `src/wm_hook/core` of this repository:
+
+```text
+3 file(s) scanned
+
+      2  none     no invisible characters at all
+      1  benign   invisible characters, all legitimate
+
+No hidden data in 3 file(s).
+
+A clean result does not mean a human wrote the text. It only means
+nothing is hidden in the characters. Anthropic marks Claude output by
+changing which words are chosen, which leaves no trace this can see.
+```
+
+Add `-v` to see one block per file, with the reason for each verdict.
+
+Exit codes: `0` clean, `1` a carrier is established, `2` the input could not be
+read or no text files were found.
+
+Install, a full worked example and the hook setup are in the
+[Quickstart](usage/quickstart.md).
+
+## What it found
+
+- Scanned on 2026-08-16: 8 external repositories, 1,155 text files.
+- 0 carriers established. 1 anomaly.
+- That bounds the false-positive rate at 0.26% per file, with 95% confidence.
+- Nothing deliberately hid data in that corpus. The negative result is the
+  finding.
+- Corpus, numbers and dates: [Results](experiment/baseline.md).
+
+## What a result means
+
+The test is one-sided.
+
+- A positive is strong. Text does not grow byte-aligned runs of zero-width
+  characters by itself, so something embedded hidden data on purpose.
+- A negative says only that no hidden data is in the codepoints. It says
+  nothing about who or what wrote the file.
+- Read [What it means](experiment/what-it-means.md) before you quote a result
+  to anyone.
+
+## Where to go next
+
+| Page | What it gives you |
 | --- | --- |
-| Private-use codepoints found | **0** |
-| Unexplained carriers in a Codex-authored repo | **0** of 703 files |
-| Carriers that turned out to be legitimate | **100%** in the Codex repo |
-| Attribution possible from hidden marks | **no** |
-| Attribution possible from declared artifacts | **yes** |
+| [Quickstart](usage/quickstart.md) | Install, a worked example, hook configuration |
+| [Detect carriers](usage/detect.md) | How a verdict is decided, and the five verdict levels |
+| [The pre-commit hook](usage/hook.md) | Strip carriers on every commit |
+| [Sign your own text](usage/signing.md) | Put your own name in a file, invisibly |
+| [Survey a tree](usage/survey.md) | Measure a whole repository at once |
+| [Results](experiment/baseline.md) | The corpus and what was found in it |
+| [What it means](experiment/what-it-means.md) | What a positive and a negative allow you to say |
+| [Method](experiment/method.md) | How the measurement was run |
+| [Invisible characters](reference/characters.md) | Each character, and what it indicates |
+| [What breaks](reference/breakage.md) | Files the cleaner damages |
+| [Before and after](reference/examples.md) | Worked examples of a rewrite |
+| [Limits and disclaimer](disclaimer.md) | Scope, warranty, and the honest limits |
 
-The hypothesis that started this project was that coding agents hide payloads
-in unassigned or private-use Unicode space. In this corpus, they do not. Every
-invisible character found was doing a job: emoji presentation, script
-orthography, or an encoding signature.
+!!! warning "The cleaner damages some scripts"
 
-That is a negative result, and it is the most useful thing here. Tools that
-claim to strip AI watermarks from text are, against this sample, solving a
-problem that has not yet appeared.
-
-## What the three channels are
-
-Confusing them is why people over- and under-estimate tools like this one.
-
-| Channel | Carrier | Detect | Remove | Covered here |
-| --- | --- | --- | --- | --- |
-| **A. Format** | Codepoints that render as nothing or as a lookalike | scan codepoints, deterministic | delete them, lossless | **yes, only this** |
-| **B. Statistical** | Which words the model chose | statistical test over tokens, needs the key | paraphrase, destroys the prose | no |
-| **C. Declared metadata** | A field that says so | parse the container | delete the field | no |
-
-!!! info "Channel A only, deliberately"
-
-    Images, C2PA manifests, container metadata, YAML frontmatter keys and
-    stylometry were all removed. Each was a different medium or a different
-    kind of evidence.
-
-    The test for anything readmitted: *does it change what invisible material
-    is in the text, and can it be removed without changing what the text
-    says?* See `.kiro/steering/scope.md`.
-
-    Narrowing was not a retreat. Residual covert-channel capacity fell from
-    2405 to 142 bits per kilobyte and detection recall rose from 85% to 100%
-    in the same period, because the effort went into the one channel this tool
-    claims.
-
-Channel A is what this project removes. It is the only one where removal costs
-nothing, because deleting a character that renders as nothing cannot change
-what the text says.
-
-Channel B is out of scope permanently. Removing a statistical watermark means
-running a paraphrase model over your prose and accepting whatever comes back.
-That has no place in a commit hook.
-
-!!! note "Channel B detection does exist, upstream"
-
-    The upstream project this borrows from,
-    [`guillaumemeyer/watermarks-remover`](https://github.com/guillaumemeyer/watermarks-remover),
-    ships `detect_text_watermark.py`: a harness that imports
-    [THU-BPM/MarkLLM](https://github.com/THU-BPM/MarkLLM) from a user-supplied
-    checkout at runtime and runs statistical detection.
-
-    Its own documentation carries the caveat that matters: detection is valid
-    only against the **same scheme configuration and keys used at generation**,
-    and it cannot certify that a vendor's detector would fail on a given text.
-    It is a research harness for controlled before/after experiments, not a
-    general-purpose detector.
-
-    Nothing in this repository invokes it.
-
-## Can you tell whether an AI wrote it?
-
-No — and the honest version of that answer is more useful than the question.
-What *is* decidable is whether something deliberately hid data in the text, and
-`wm-hook --detect` decides it.
-
-!!! success "A positive is strong"
-
-    Text does not spontaneously grow byte-aligned runs of zero-width characters
-    between Latin letters. When the detector fires, something embedded hidden
-    data on purpose. **0 false positives in 1,155 files**, which bounds the
-    per-file rate at 0.26% with 95% confidence.
-
-!!! danger "A negative proves nothing about authorship"
-
-    A Channel B watermark leaves no codepoint trace at all, so an AI-written
-    file is *expected* to scan clean. Two repositories in that corpus were
-    written almost entirely by coding agents. Both scan clean.
-
-Specific, not sensitive. The tool therefore refuses to print a "% AI" number:
-collapsing a strong positive and a worthless negative into one figure is
-precisely the error the carriers / explained / unexplained split exists to
-prevent.
-
-Presence is not the test — **structure** is. See
-[Is a carrier present?](usage/detect.md) for the weights, the verdict levels
-and the measured false-positive table.
-
-## Where it stands
-
-Measured against a catalogue of 24 published carrier techniques:
-
-| | |
-| --- | --- |
-| Detection recall, in-scope techniques | **21 / 21 (100%)** |
-| Residual covert-channel capacity | **142 bits/KB (1.0% of unfiltered)** |
-| Largest remaining channel | braille blank, deliberately left open |
-| Layer B | 0 of 1, and undetectable by anyone today |
-
-Two fixes closed 94% of the residual: **bounding emoji tag payloads** (the
-subdivision-flag exemption accepted any length, worth 1535 b/KB) and
-**deriving the strip rule from `Default_Ignorable_Code_Point`** rather than
-category `Cf`, which had been blind to invisible characters classified as
-letters (728 b/KB).
-
-Neither would have been prioritised by counting techniques. Both were obvious
-once capacity was measured in bits.
-
-## What this repository contains
-
-- **A pre-commit hook** that strips Channel A carriers. See
-  [The hook](usage/hook.md).
-- **A survey tool** that measures how much signal is present and attributes
-  authorship where evidence supports it. See [The survey](usage/survey.md).
-- **A dated baseline** of what was actually found. See
-  [What we measured](experiment/baseline.md).
-- **A catalogue** of the characters involved and what each one indicates. See
-  [Invisible characters](reference/characters.md).
-
-## The uncomfortable finding
-
-The hook damages real files. Measured, not hypothesised: on a third-party
-Sanskrit stemmer checked into a Codex-authored repository, it deleted five
-zero-width non-joiners that were legitimate Devanagari orthography.
-
-That is documented in full at [What breaks](reference/breakage.md), because a
-tool that rewrites source files in place has an obligation to be honest about
-when it is wrong.
+    `wm-hook <dir>` without `--detect` rewrites files in place. It strips
+    word-final joiners that Devanagari needs and flattens the ideographic space
+    used in Japanese and Chinese. See [What breaks](reference/breakage.md).
