@@ -330,7 +330,28 @@
   - _Boundary: tests/test_divergence.py_
   - _Depends: 2.4, 2.5, 3.3_
 
-- [ ] 4.5 (P) Re-sync the structure steering document
+- [ ] 4.5 (P) Prove the POSIX assertions actually execute
+  - Windows reports every writable file as `0o666` and has no `os.fchmod`, so
+    the executable bit surviving a rewrite — the whole of Requirement 8.1 —
+    cannot be observed on the development host. Eight assertions skip there.
+    A skipped test is not coverage.
+  - `scripts/test-linux.sh` already runs the suite on Linux through Dagger and
+    currently reports 783 passed with **zero** skips. This task makes that a
+    standing guarantee rather than a thing someone remembers to run: assert in
+    the suite itself that the POSIX-gated tests are *not* skipped when POSIX
+    modes are present, so a misfiring platform gate fails loudly instead of
+    silently dropping an assertion.
+  - Observable: on Linux the run reports zero skips, and forcing a gate to
+    misreport its platform fails the suite rather than skipping quietly.
+  - _Requirements: 8.1, 11.5_
+  - _Boundary: tests/test_atomic.py, scripts/test-linux.sh_
+  - _Depends: 3.3_
+
+  > Continuous integration and release automation are **not** in this spec's
+  > boundary — see `.kiro/specs/ci-pipeline/`. This task only closes the
+  > "assertions that execute nowhere" gap.
+
+- [ ] 4.6 (P) Re-sync the structure steering document
   - The repository no longer has a single original source file; update the
     organisation patterns to describe the owned policy layer, the constants-only
     dependency rule on the vendored package, and where a new rule belongs.
@@ -369,13 +390,29 @@
 - **1.1** — Test data must never contain a *literal* invisible carrier. This
   repo's own hook would rewrite the test file and silently corrupt the
   constant. Always write carriers as `\uXXXX` escapes.
-- **2.3** — **WSL (`Debian-MW`) is available on this host** and is the way to
-  verify POSIX behaviour that Windows cannot show. Copy `src/`, `tests/` and
-  `pyproject.toml` into a tmpfs path inside WSL and run pytest there. This is
-  how the executable-bit and real-symlink assertions were proven rather than
-  skipped. Windows reports every writable file as `0o666`, has no `os.fchmod`,
-  refuses `os.replace` over a read-only target, and this account cannot create
-  symlinks — so eight tests skip here and pass there.
+- **2.3** — Linux verification: **`scripts/test-linux.sh`**, run through the
+  `Debian` WSL distro:
+  `wsl.exe -d Debian -- bash /mnt/c/Users/mariu/Source/watermarks-remover/scripts/test-linux.sh`
+  It uses **Dagger** (not raw docker) so the same pipeline runs unchanged on a
+  workstation and on CI. Baseline there is **783 passed, 0 skipped**, versus
+  775 passed + 8 skipped on Windows — the 8 are the POSIX gates.
+  **Never use the `Debian-MW` distro; it is reserved.** `Debian` has Docker and
+  the dagger CLI at `~/.local/bin/dagger`, but no system Python — the container
+  supplies it.
+  Two gotchas that cost time: PowerShell expands `$HOME` and `$PATH` in
+  `wsl -- bash -lc "..."` before bash sees them, so put anything with shell
+  variables in a **script file**; and `withDirectory`'s CLI flag is `--source`,
+  not `--directory`.
+- **2.3** — Two different kinds of local skip, do not conflate them:
+  - **The mode assertions are a genuine gap.** Windows reports every writable
+    file as `0o666` and has no `os.fchmod`, so the executable bit surviving a
+    rewrite — the whole point of Requirement 8.1 — cannot be observed here.
+    These must run on Linux.
+  - **The symlink assertions are not a gap.** Windows only supports symlinks in
+    developer mode, so they are atypical on Windows in the first place; skipping
+    them there is the correct outcome, not missing coverage. The refusal remains
+    a POSIX security property and is verified on Linux, but its absence from a
+    Windows run costs nothing.
 - **2.3** — `write_atomic` **refuses to create a new file** (design's
   precondition: path exists and is a regular file), narrowing the vendored
   writer, which did `mkdir(parents=True)` and could create one. With no
