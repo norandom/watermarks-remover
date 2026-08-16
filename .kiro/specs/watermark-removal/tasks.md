@@ -9,6 +9,12 @@
 > the same test file. (Group 4 cannot overlap group 2 in time — it depends on
 > group 3 — but the file-ownership rule is what keeps the `(P)` markers within
 > each group safe.)
+>
+> **Review effort is tiered, not uniform** — see `.kiro/steering/review-effort.md`.
+> Tier 1 (fresh adversarial reviewer): 2.2, 2.4, 2.5, 3.1, 3.2, 3.3, and all of
+> group 4. Tier 2 (controller reviews inline): 2.1, 2.3, 4.5. The
+> non-negotiable checks — suite green, vendored hashes intact, boundary
+> respected, RED evidence, no literal carriers in test modules — apply to both.
 
 - [ ] 1. Foundation: import access, test harness, and the corpora
 
@@ -66,7 +72,7 @@
     cleaned under the default policy — private-use characters are preserved by
     default, and a smuggled run on legal bases legitimately retains its first
     selector under the selector-run rule recorded in the design's classifier
-    notes and implemented in 2.5.
+    notes and implemented in 2.4(b).
   - Observable: every entry carries an expected-policy and expected-residue
     annotation, and no entry asserts removal under a policy that preserves it.
   - _Requirements: 11.4_
@@ -117,6 +123,15 @@
   - _Boundary: atomic_
 
 - [ ] 2.4 Implement the character classifier
+  > **One task, four rule groups.** This was four sequential tasks and was
+  > merged: they shared a single file and boundary, each chained off the one
+  > before, and splitting them produced observables that were *false at the
+  > moment their own task finished* — the script-preservation group asserted
+  > corpus entries that only the space-handling group protects. A classifier is
+  > one cohesive artifact; review it whole. Implement the groups in order, each
+  > with its own failing test first.
+
+  **(a) The decision function**
   - Build the single decision function that both cleaning and detection will
     use, returning the action, the surviving character, the carrier class, and
     the reason a rule fired or declined.
@@ -125,7 +140,7 @@
   - Lock the "only data crosses this boundary" invariant with a test: assert no
     entry the shim exports is callable, and that the vendored decision-function
     names are absent from it. Nothing currently prevents a later task from
-    re-exporting one, and tasks 2.4 and 3.1 depend on that invariant holding.
+    re-exporting one, and this task and 3.1 depend on that invariant holding.
   - Evaluate every context-dependent rule against the previous surviving **base**
     rather than the raw previous character, so a run of carriers cannot mask
     itself and every member of the run is removed.
@@ -133,13 +148,10 @@
     offset zero is preserved unless the policy opts into stripping it; every
     interior occurrence is a carrier and is stripped. The classifier is never
     told the file's format, so a format-conditional rule would be unimplementable.
-  - Observable: a run of forty consecutive selectors is fully removed in one
-    call, where today one is removed per invocation.
-  - _Requirements: 1.1, 1.2, 2.1, 2.4, 2.5, 2.6, 6.5, 10.3_
-  - _Boundary: classify_
-  - _Depends: 1.2, 2.1_
+  - Group observable: a run of forty consecutive selectors is fully removed in
+    one call, where today one is removed per invocation.
 
-- [ ] 2.5 Correct the emoji, flag and selector-run rules
+  **(b) Emoji, flag and selector-run rules**
   - Widen the emoji base set so presentation selectors survive after the five
     bases currently missing, and narrow it so ASCII digits and the hash and
     asterisk characters count as bases only inside a genuine keycap sequence.
@@ -149,50 +161,47 @@
     on the same bases.
   - Bound subdivision-flag tag payloads to a conforming length and alphabet, so
     an arbitrary-length hidden payload behind a flag is treated as contraband.
-  - Add a regression case for each defect this task closes.
-  - Observable: an information-source emoji keeps its presentation selector, a
-    joiner between two ASCII digits is removed, a long tag payload behind a flag
-    is stripped, and a smuggled selector run retains only its first member.
-  - _Requirements: 2.2, 2.3, 3.1, 3.2, 11.5_
-  - _Boundary: classify_
-  - _Depends: 2.4_
+  - Group observable: an information-source emoji keeps its presentation
+    selector, a joiner between two ASCII digits is removed, a long tag payload
+    behind a flag is stripped, and a smuggled selector run retains only its
+    first member.
 
-- [ ] 2.6 Correct the script-preservation rules
+  **(c) Script-preservation rules**
   - Preserve the zero-width separator where the surrounding script uses it as a
     word or line break.
   - Extend joiner preservation to the edge positions where it is currently lost:
     end of a value, before punctuation, beside a digit, and before a line break.
   - Preserve private-use characters under the default policy, and preserve
     directional marks and correctly paired embeddings.
-  - Add a regression case for each defect this task closes.
-  - Observable: every corpus entry protected by *this task's* rules classifies as
-    unchanged — Arabic, Persian and Urdu joiners at edge positions; Thai, Lao,
-    Khmer and Myanmar separators; icon-font glyphs; Devanagari conjuncts;
-    directional marks. Space homoglyphs are 2.7's, and whole-file byte-identity
-    is 3.1's.
-  - _Requirements: 3.3, 3.4, 3.5, 3.6, 3.7, 11.5_
-  - _Boundary: classify_
-  - _Depends: 1.3, 2.4_
+  - Group observable: Arabic, Persian and Urdu joiners at edge positions; Thai,
+    Lao, Khmer and Myanmar separators; icon-font glyphs; Devanagari conjuncts;
+    and directional marks all classify as unchanged.
 
-- [ ] 2.7 Make space handling position-aware
+  **(d) Position-aware space handling**
   - Suppress space replacement at any position segmentation marked structurally
     significant, regardless of policy. Correctness outranks configuration: no
     policy flag may re-enable a replacement at such a position.
   - Where a space homoglyph would, once replaced, conceal provenance metadata
     from later processing, remove it instead of replacing it. This is one half
-    of the concealed-key behaviour; the key-pattern half lands in 2.8 and the
+    of the concealed-key behaviour; the key-pattern half lands in 2.5 and the
     joint outcome is asserted in 4.1.
   - Honour the normalisation flag everywhere else, leaving all space homoglyphs
     untouched when it is disabled.
-  - Observable: a configuration document with a no-break space at the start of a
-    line still parses after cleaning and the provenance key it precedes is
-    removed; with normalisation disabled, every space homoglyph in the
-    French-typography corpus file is left unchanged.
-  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 11.5_
-  - _Boundary: classify_
-  - _Depends: 1.3, 2.2, 2.4_
+  - Group observable: a configuration document with a no-break space at the
+    start of a line still parses after cleaning and the provenance key it
+    precedes is removed; with normalisation disabled, every space homoglyph in
+    the French-typography corpus file is left unchanged.
 
-- [ ] 2.8 (P) Implement the provenance key policy
+  **Task observable (all groups):** every preservation-corpus entry whose
+  protection is a *classification* rule comes back unchanged under its annotated
+  policy, and every carrier-corpus entry is classified as contraband under
+  its annotated policy. Whole-file byte-identity remains 3.1's.
+  - Add a regression case for each defect this task closes.
+  - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 6.5, 10.3, 11.5_
+  - _Boundary: classify_
+  - _Depends: 1.2, 1.3, 1.4, 2.1, 2.2_
+
+- [ ] 2.5 (P) Implement the provenance key policy
   - Re-declare the key vocabulary locally, split into names that always indicate
     provenance and ambiguous names that are also ordinary domain terms. It is
     re-authored rather than imported because the split is required anyway and
@@ -208,7 +217,7 @@
     This task reports spans only — the text rewrite belongs to the pipeline.
   - Tolerate a leading run of invisible or space-homoglyph characters in the key
     pattern so a concealed key is caught on the first pass. This is the other
-    half of the concealed-key behaviour begun in 2.7.
+    half of the concealed-key behaviour begun in 2.4(d).
   - Observable: a title mentioning an AI vendor reports keep; a generator key
     reports a drop span covering its nested continuation lines; a plain model key
     reports keep while a model key naming a chat model reports drop; a block
@@ -232,7 +241,7 @@
     preservation-corpus file emerges byte-identical.
   - _Requirements: 1.4, 6.1, 6.2, 6.3, 6.4, 6.6_
   - _Boundary: clean_
-  - _Depends: 1.3, 2.2, 2.4, 2.5, 2.6, 2.7, 2.8_
+  - _Depends: 1.3, 2.2, 2.4, 2.5_
 
 - [ ] 3.2 Surface what was removed
   - Aggregate the pipeline's decisions into a reportable result: each distinct
@@ -278,7 +287,7 @@
     frontmatter, and an invisible character inside a key name.
   - Include the case that never converged before: a no-break space at the start
     of a frontmatter line must, in one pass, leave the document parseable and
-    remove the provenance key. This is the joint outcome of 2.7 and 2.8.
+    remove the provenance key. This is the joint outcome of 2.4(d) and 2.5.
   - Observable: no corpus file requires a second pass, and the previously
     non-converging case is covered by a named regression test.
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 11.2, 11.5_
@@ -319,7 +328,7 @@
     that changes semantics, fails the suite with a named diff.
   - _Requirements: 11.5_
   - _Boundary: tests/test_divergence.py_
-  - _Depends: 2.5, 2.6, 2.7, 2.8, 3.3_
+  - _Depends: 2.4, 2.5, 3.3_
 
 - [ ] 4.5 (P) Re-sync the structure steering document
   - The repository no longer has a single original source file; update the
@@ -362,12 +371,12 @@
   constant. Always write carriers as `\uXXXX` escapes.
 - **1.4** — `tests/test_corpus_carriers.py` contains a *model* of the
   documented classification rules (`_is_preserved`, `_dropped_keys`), written
-  because the real classifier does not exist until 2.4–2.8. **Task 4.3 must
+  because the real classifier does not exist until 2.4–2.5. **Task 4.3 must
   read the manifest annotations, not this model** — otherwise a divergence
   between the shipped classifier and the spec would be masked. Its
   non-tautology was established by running it against the separately-authored
   preservation corpus, where it reproduced all 18 declared protected-codepoint
-  sets exactly. When 2.4–2.8 land, consider deleting the model in favour of the
+  sets exactly. When 2.4–2.5 land, consider deleting the model in favour of the
   real classifier.
 - **1.3** — The corpus is byte-exact fixture data and **must** stay excluded
   from this repo's own hook. Measured: the shipped hook damages 13 of 19
