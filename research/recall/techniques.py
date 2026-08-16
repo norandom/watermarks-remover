@@ -207,10 +207,10 @@ TECHNIQUES: tuple[Technique, ...] = (
         reference="U+3164 and U+FFA0 render as nothing but are category Lo",
         payload="2 positions",
         text="heㅤllo worﾠld\n",
-        detect=False,
-        remove=False,
-        note="category Lo, not Cf: outside the strip set by design. A known "
-             "gap, recorded rather than silently missed",
+        note="CLOSED. Category Lo, so the old category-Cf rule could never "
+             "see it; the strip rule now derives from "
+             "Default_Ignorable_Code_Point, which covers it. Was 728 bits/KB, "
+             "84% of residual capacity",
     ),
     Technique(
         key="braille_blank",

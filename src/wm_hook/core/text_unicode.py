@@ -212,6 +212,45 @@ def _is_private_use(cp: int) -> bool:
     return 0xE000 <= cp <= 0xF8FF or 0xF0000 <= cp <= 0xFFFFD or 0x100000 <= cp <= 0x10FFFD
 
 
+# Unicode's Default_Ignorable_Code_Point property, from DerivedCoreProperties.
+#
+# This is the property the strip rule was reaching for all along: it means
+# "render as nothing when unsupported". Category Cf was standing in for it and
+# is strictly narrower, which left real carriers behind:
+#
+#   U+3164, U+FFA0   Hangul fillers, category Lo -- *letters* that render as
+#                    nothing. Measured at 728 bits/KB of covert channel, 84%
+#                    of residual capacity after every other hole was closed.
+#   U+180F           Mongolian free variation selector four, category Mn.
+#                    Added in Unicode 14; the sibling selectors U+180B-U+180D
+#                    were enumerated by hand and this one was simply missed.
+#
+# That last one is the argument for the property over a hand-list: an
+# enumeration goes stale silently, a derived property does not.
+#
+# Ranges are stable across releases and additions are additive. Python's
+# unicodedata does not expose the property, so it is transcribed here.
+_DEFAULT_IGNORABLE_RANGES: tuple[tuple[int, int], ...] = (
+    (0x00AD, 0x00AD), (0x034F, 0x034F), (0x061C, 0x061C),
+    (0x115F, 0x1160), (0x17B4, 0x17B5), (0x180B, 0x180F),
+    (0x200B, 0x200F), (0x202A, 0x202E), (0x2060, 0x206F),
+    (0x3164, 0x3164), (0xFE00, 0xFE0F), (0xFEFF, 0xFEFF),
+    (0xFFA0, 0xFFA0), (0xFFF0, 0xFFF8),
+    (0x1BCA0, 0x1BCA3), (0x1D173, 0x1D17A),
+    (0xE0000, 0xE0FFF),
+)
+
+
+def _is_default_ignorable(cp: int) -> bool:
+    """True for Unicode's Default_Ignorable_Code_Point property."""
+    for lo, hi in _DEFAULT_IGNORABLE_RANGES:
+        if lo <= cp <= hi:
+            return True
+        if cp < lo:
+            break  # ranges are ascending
+    return False
+
+
 def _is_strip_cp(cp: int) -> bool:
     if cp in STRIP_CODEPOINTS:
         return True
@@ -221,6 +260,11 @@ def _is_strip_cp(cp: int) -> bool:
     if 0xE0001 <= cp <= 0xE007F:
         return True
     if _is_private_use(cp):
+        return True
+    # Anything Unicode says renders as nothing, regardless of category. The
+    # context exemptions in _decide run before this and still apply, so bidi
+    # marks, script joiners and same-script fillers keep their protection.
+    if _is_default_ignorable(cp):
         return True
     return False
 
@@ -280,9 +324,17 @@ _TAG_RANGE = range(0xE0020, 0xE0080)
 _ORTHOGRAPHIC_CF: frozenset[int] = frozenset(
     {0x0600, 0x0601, 0x0602, 0x0603, 0x0604, 0x0605, 0x06DD, 0x070F, 0x08E2, 0x110BD, 0x110CD}
 )
-_MONGOLIAN_FVS: frozenset[int] = frozenset({0x180B, 0x180C, 0x180D})
+# U+180F joined this set in Unicode 14 and was missed when the others were
+# enumerated by hand -- the reason the strip rule now derives from
+# Default_Ignorable rather than a list.
+_MONGOLIAN_FVS: frozenset[int] = frozenset({0x180B, 0x180C, 0x180D, 0x180F})
 _KHMER_VOWELS: frozenset[int] = frozenset({0x17B4, 0x17B5})
-_HANGUL_FILLERS: frozenset[int] = frozenset({0x115F, 0x1160})
+# U+115F and U+1160 hold a jamo slot in a partial syllable. U+3164 and U+FFA0
+# are the compatibility and halfwidth fillers; they render as nothing and are
+# the characters used to make "invisible" display names, so they are stripped
+# unless they directly follow a jamo, which is the only position where a filler
+# is doing work.
+_HANGUL_FILLERS: frozenset[int] = frozenset({0x115F, 0x1160, 0x3164, 0xFFA0})
 _SCRIPT_GLUE: frozenset[int] = _MONGOLIAN_FVS | _KHMER_VOWELS | _HANGUL_FILLERS
 
 

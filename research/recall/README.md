@@ -21,20 +21,31 @@ python research/recall/capacity.py --json --host-kb 16
 
 | Channel | pre b/KB | post b/KB | survives |
 | --- | ---: | ---: | ---: |
-| **Tag block behind a flag emoji** | 1535 | **1535** | **100%** |
-| **Invisible non-`Cf` letters** | 728 | **728** | **100%** |
 | **Braille pattern blank** | 128 | **128** | **100%** |
 | Trailing-whitespace count | 14 | 14 | 100% |
 | Space homoglyph | 128 | 0 | 0.2% |
 | Zero-width binary | 728 | 0 | 0% |
 | Tag block, bare | 1535 | 0 | 0% |
+| Tag block behind a flag emoji | 1535 | 0 | 0% |
 | Variation selectors | 6953 | 0 | 0% |
 | Private-use area | 3070 | 0 | 0% |
+| Invisible non-`Cf` letters | 728 | 0 | 0% |
 
-**Total: 14,817 bits/KB before cleaning, 2,405 after — 16.2% survives.**
+**Total: 14,817 bits/KB before cleaning, 142 after — 1.0% survives.**
 
-That is roughly **300 bytes of payload per kilobyte of host text**. Enough for
-a URL, a session token or a run identifier in a single README, invisibly.
+About **18 bytes per kilobyte** of host text, almost all of it in one channel
+that is arguably not worth closing.
+
+### How it got there
+
+| Stage | Residual | Note |
+| --- | ---: | --- |
+| As inherited | 2405 b/KB | 16.2% |
+| Bounded flag payload | 870 b/KB | closed 1535, the largest channel |
+| Default-ignorable strip rule | **142 b/KB** | closed 728, the Hangul fillers |
+
+Two fixes, one metric, 94% of the residual gone. Neither would have been
+prioritised by a technique count, which rated both as one miss among several.
 
 ### What the metric changes
 
@@ -76,6 +87,38 @@ could be closed without waiting for the rest of that task. It is not yet wired
 into the cleaning pipeline — that happens when 2.4 and 3.1 land. `capacity.py`
 demonstrates it by rebinding the vendored predicate for the duration of a
 measurement.
+
+### Fixed: the invisible non-`Cf` letters
+
+The strip rule was *"Unicode general category `Cf`"*, which is a stand-in for
+"renders as nothing" and is strictly narrower than the real thing. Three
+carriers lived in the gap:
+
+| Codepoint | Category | Why the old rule missed it |
+| --- | --- | --- |
+| `U+3164` HANGUL FILLER | `Lo` | it is a **letter** that renders as nothing |
+| `U+FFA0` HALFWIDTH HANGUL FILLER | `Lo` | same |
+| `U+180F` MONGOLIAN FVS FOUR | `Mn` | added in Unicode 14; siblings `U+180B`–`U+180D` were listed by hand and this one was simply missed |
+
+The rule now derives from Unicode's **`Default_Ignorable_Code_Point`**
+property, which means exactly "render as nothing when unsupported". Of 405
+assigned default-ignorable codepoints, 399 are now stripped; the remaining six
+are bidi marks and isolates, preserved by policy under Requirement 3.7 and
+governed by `strip_bidi`.
+
+`U+180F` is the argument for the property over a list. A hand-enumeration goes
+stale silently as Unicode grows; a derived property does not. A forward-
+compatibility test now asserts that *no* assigned default-ignorable character
+escapes except the six policy exceptions.
+
+Legitimate use still survives, because the context exemptions run first: a
+jamo filler after a choseong jamo, a Mongolian selector after a Mongolian
+letter, a Khmer inherent vowel, bidi isolates around Hebrew, Devanagari
+half-forms. Position is the discriminator, not identity.
+
+Braille blank is deliberately **not** included: it is category `So` and not
+default-ignorable, because an empty braille cell is a real character. Stripping
+it would corrupt braille text to recover 128 b/KB.
 
 ### Remaining priority
 
