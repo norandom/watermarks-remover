@@ -3,6 +3,17 @@
 Finds data that someone hid inside text using characters you cannot see, and
 removes it.
 
+![The Sandman scattering invisible Unicode tag characters over three sleeping
+developers. Labels trace each speck to the ASCII it mirrors — U+E0067 to g,
+U+E0065 to e, U+E006E to n, U+E003D to =, U+E0063 to c, U+E006C to l — and a
+panel decodes the whole run as gen=claude-opus-4;run=8f31c2a0. On the monitor
+behind them the file reads only "The release ships on Tuesday." A sign on the
+wall says: invisible characters, visible problems.](docs/assets/sandman.webp)
+
+The file on that screen holds one visible sentence and thirty characters that
+render as nothing. [What they encode](#what-the-invisible-characters-actually-encode)
+is worked through below.
+
 **Full documentation: <https://norandom.github.io/watermarks-remover/>** — how a
 verdict is decided, what the tool damages, what was measured, and what a result
 does and does not prove.

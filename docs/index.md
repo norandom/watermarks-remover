@@ -2,6 +2,19 @@
 
 `wm-hook` finds and removes invisible Unicode characters that hide data in text.
 
+![The Sandman scattering invisible Unicode tag characters over three sleeping
+developers. Labels trace each speck to the ASCII it mirrors — U+E0067 to g,
+U+E0065 to e, U+E006E to n, U+E003D to =, U+E0063 to c, U+E006C to l — and a
+panel decodes the whole run as gen=claude-opus-4;run=8f31c2a0. On the monitor
+behind them the file reads only "The release ships on Tuesday." A sign on the
+wall says: invisible characters, visible problems.](assets/sandman.webp)
+
+The file on that screen holds one visible sentence and thirty characters that
+render as nothing. The tag block `U+E0000`–`U+E007F` mirrors ASCII exactly, so
+each speck is one letter of a payload that names its own producer. See
+[Invisible characters](reference/characters.md) for every carrier family, and
+[Detect carriers](usage/detect.md) for how a run like that is judged.
+
 ## Why this exists
 
 Coding agents now write a large share of the files in a normal repository. You
