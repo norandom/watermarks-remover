@@ -6,6 +6,11 @@ build/
 dist/
 .pytest_cache/
 
+# Machine-local agent settings. .claude/skills/ IS committed - the kiro
+# workflow is part of the project - but per-machine permission allowlists are
+# personal and would churn between contributors.
+.claude/settings.local.json
+
 # Built documentation. Never commit this: MkDocs Material ships 32 lunr search
 # language packs, several of which contain legitimate invisible characters --
 # the Sanskrit pack carries 23 zero-width non-joiners after Devanagari viramas.
