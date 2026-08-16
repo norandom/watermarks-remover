@@ -286,11 +286,31 @@ if [ "$PUBLISH" != 1 ]; then
 fi
 
 step "publish"
-# A PEP 440 pre-release segment in the version is the single source of truth
-# for the GitHub pre-release flag, so the two can never disagree.
-PRERELEASE=""
+# GitHub's pre-release flag is not free: "Latest release cannot be draft or
+# prerelease", so a repository whose releases are all pre-releases has no
+# latest release and the sidebar on the repository page renders empty. The
+# releases exist, and nobody finds them.
+#
+# The warning therefore goes where people actually read it -- the top of the
+# release notes -- and the flag is left off so the release is visible. The PEP
+# 440 segment in the version is the real signal and cannot be missed: 0.1.0a2
+# is an alpha whatever GitHub's UI says.
+NOTES="dist/CHANGELOG-$VERSION.md"
 case "$VERSION" in
-    *a*|*b*|*rc*|*dev*) PRERELEASE="--prerelease" ;;
+    *a*|*b*|*rc*|*dev*)
+        TMP_NOTES="dist/NOTES-$VERSION.md"
+        {
+            echo "> **This is a pre-release ($VERSION).** Expect defects. The"
+            echo "> cleaner is known to damage Devanagari spelling and CJK"
+            echo "> typography; see docs/reference/breakage.md. \`--detect\` and"
+            echo "> \`--check\` never write, so those defects cannot reach your"
+            echo "> files."
+            echo
+            cat "$NOTES"
+        } > "$TMP_NOTES"
+        NOTES="$TMP_NOTES"
+        echo "  pre-release warning prepended to the notes"
+        ;;
 esac
 
 if [ "$TAG_EXISTS" = 0 ]; then
@@ -299,9 +319,8 @@ if [ "$TAG_EXISTS" = 0 ]; then
 else
     echo "  reusing the existing $TAG"
 fi
-# shellcheck disable=SC2086
 gh release create "$TAG" "$WHEEL" "$SDIST" \
     --title "$TAG" \
-    --notes-file dist/CHANGELOG-"$VERSION".md \
-    $PRERELEASE
-echo "  published $TAG${PRERELEASE:+ (pre-release)}"
+    --notes-file "$NOTES" \
+    --latest
+echo "  published $TAG"

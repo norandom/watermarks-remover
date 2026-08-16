@@ -1,34 +1,55 @@
 # watermarks-remover
 
-Finds data that someone hid inside text with characters you cannot see, and
+Finds data that someone hid inside text using characters you cannot see, and
 removes it.
 
-Documentation: <https://norandom.github.io/watermarks-remover/>
+**Full documentation: <https://norandom.github.io/watermarks-remover/>** — how a
+verdict is decided, what the tool damages, what was measured, and what a result
+does and does not prove.
 
 [![release v0.1.0a2 pre-release](https://img.shields.io/badge/release-v0.1.0a2%20pre--release-orange)](https://github.com/norandom/watermarks-remover/releases/tag/v0.1.0a2)
 [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
-> Measured 2026-08-16. Provided without warranty of any kind. This is a
-> measurement experiment, not a tool for passing AI-written work off as human.
-> See [Limits and disclaimer](https://norandom.github.io/watermarks-remover/disclaimer/).
+> Pre-release, no warranty. This is a measurement experiment, not a tool for
+> passing AI-written work off as human.
 
-## Try it
+## Install
 
-You do not need to install anything. `uvx` builds a throwaway environment, runs
-the tool, and deletes the environment again.
+Nothing to install permanently. `uvx` builds a throwaway environment, runs the
+tool, then deletes it again.
+
+```bash
+uvx --from 'git+https://github.com/norandom/watermarks-remover' wm-hook --detect .
+```
+
+To keep it on your PATH:
+
+```bash
+uv tool install 'git+https://github.com/norandom/watermarks-remover'
+```
+
+Both track the default branch, so you get the newest code. Add `@v0.1.0a2` to
+the URL if you would rather pin a version.
+
+No shell tooling at all? Two scripts list invisible characters and stop there:
+
+```powershell
+irm https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.ps1 | iex
+```
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.sh | bash
+```
+
+The PowerShell one needs Windows PowerShell 5.1, which ships with Windows 10 and
+11. Read anything you pipe into a shell. Both only read files.
+
+## Detect from the command line
+
+`--detect` only reads. It never changes a file.
 
 ```console
-$ uvx --from 'git+https://github.com/norandom/watermarks-remover' \
-      wm-hook --detect -v .
-CARRIER! release-notes.md: covert carrier present, and it decodes
-         30 carrier(s), 0 explained, 30 unexplained
-         + run (+2): 30 consecutive unexplained tag_chars at offset 15
-         + tag_outside_flag (+3): 30 tag character(s) outside a subdivision flag sequence; the tag block has no other sanctioned use
-         > unicode tag block @15 [confirmed]
-           'gen=claude-opus-4;run=8f31c2a0'
-           identifies: 8f31c2a0, claude, gen=
-         confidence: high; capacity 210 bits
-
+$ wm-hook --detect .
 2 file(s) scanned
 
       1  none     no invisible characters at all
@@ -40,23 +61,85 @@ Files with hidden data:
 1 of 2 file(s) carry hidden data. Run -v for the reasons.
 ```
 
-That tree holds two files. `release-notes.md` hides a payload in invisible tag
-characters, and `app.py` is plain. The script that builds the tree is in the
-[Quickstart](https://norandom.github.io/watermarks-remover/usage/quickstart/).
+Add `-v` for the reasoning behind each verdict:
 
-Two paragraphs are cut from the output above. One says a carrier never tells you
-who put it there. The other says a clean file is not proof that a human wrote it.
+```console
+$ wm-hook --detect -v release-notes.md
+CARRIER! release-notes.md: covert carrier present, and it decodes
+         30 carrier(s), 0 explained, 30 unexplained
+         + run (+2): 30 consecutive unexplained tag_chars at offset 29
+         + tag_outside_flag (+3): 30 tag character(s) outside a subdivision
+           flag sequence; the tag block has no other sanctioned use
+         > unicode tag block @29 [confirmed]
+           'gen=claude-opus-4;run=8f31c2a0'
+           identifies: 8f31c2a0, claude, gen=
+         confidence: high; capacity 210 bits
+```
 
-Without `-v` the tool prints only the summary block.
+Point it at a directory and it walks the tree, skipping `.git`,
+`node_modules`, `.venv`, `dist`, `build` and `site`. Dot directories such as
+`.claude` and `.kiro` are skipped too; `--include-hidden-files` puts them back.
 
-`--detect` only reads files. Bare `wm-hook <dir>` rewrites the whole tree in
-place, so run that under git and read the diff. Exit codes for `--detect`: `0`
-clean, `1` a carrier was established, `2` unreadable input or no text files found.
+Exit codes: `0` nothing found, `1` hidden data found, `2` a file could not be
+read or no text files were found.
 
-To keep the command on your PATH instead, run
-`uv tool install 'git+https://github.com/norandom/watermarks-remover'`.
+## What the invisible characters actually encode
 
-## Wire it into pre-commit
+The file above looks like one line of text:
+
+```text
+The release ships on Tuesday.
+```
+
+It is 29 visible characters followed by 30 invisible ones. The invisible run is
+in the Unicode **tag block**, `U+E0000`–`U+E007F`, which mirrors ASCII exactly:
+add `U+E0000` to an ASCII code point and you get a character that renders as
+nothing at all.
+
+| Invisible character | ASCII it mirrors |
+| --- | --- |
+| `U+E0067` | `g` |
+| `U+E0065` | `e` |
+| `U+E006E` | `n` |
+| `U+E003D` | `=` |
+| `U+E0063` | `c` |
+| `U+E006C` | `l` |
+
+Read the whole run that way and it spells:
+
+```text
+gen=claude-opus-4;run=8f31c2a0
+```
+
+That is why the tool decodes payloads instead of only counting characters. A
+count tells you 30 tag characters are present. The decode tells you what they
+say, and here they name their own producer.
+
+Other carriers encode differently. Variation selectors carry one arbitrary byte
+each. Zero-width characters carry one bit each, so eight of them make a byte.
+Private-use codepoints have no assigned meaning at all. Each one, and when it is
+legitimate, is catalogued in
+[Invisible characters](https://norandom.github.io/watermarks-remover/reference/characters/).
+
+## Remove them
+
+```console
+$ wm-hook --check release-notes.md
+wm-hook: release-notes.md: changed — would clean (unicode removed=30 replaced=0)
+
+$ wm-hook release-notes.md
+wm-hook: release-notes.md: changed — cleaned (unicode removed=30 replaced=0)
+```
+
+`--check` reports and writes nothing. Bare `wm-hook` rewrites files in place, so
+run it under git and read the diff.
+
+> [!WARNING]
+> The cleaner damages correct text: Devanagari spelling, CJK typography and
+> some YAML. Every defect we reproduced is listed with its status in
+> [What breaks](https://norandom.github.io/watermarks-remover/reference/breakage/).
+
+## Install the pre-commit hook
 
 ```yaml
 # .pre-commit-config.yaml
@@ -69,87 +152,35 @@ repos:
       - id: wm-hook-check        # manual stage, reports only
 ```
 
-The install commands above deliberately track the default branch, so you always
-get the newest code. Pin them yourself if you want a fixed version: add
-`@v0.1.0a2` to the `git+` URL, or a tag to the raw script URL.
+```bash
+pre-commit install
+pre-commit run --all-files      # do this once, and read the diff
+```
 
-`rev:` is the exception and stays pinned. pre-commit caches by rev and its whole
-point is that everyone on the team runs the same version, so it warns on a
-mutable reference. Move it with `pre-commit autoupdate`.
+`wm-hook` rewrites a changed file and exits 1, so the commit fails and you
+re-stage. `wm-hook-check` only reports.
 
-Run `pre-commit run --all-files` once and read the diff before you trust it.
-Hook order, exclusions and CI gates:
+`rev:` stays pinned on purpose. pre-commit caches by rev and warns on a mutable
+reference, so a team should run one known version. Move it with
+`pre-commit autoupdate`. Hook ordering and exclusions:
 [The pre-commit hook](https://norandom.github.io/watermarks-remover/usage/hook/).
 
-## Or run it with nothing installed at all
-
-Two throwaway scripts. They list every invisible character and stop there, with
-no explanation layer, so they cannot tell an emoji selector from hidden data.
-Use them to look. Use `wm-hook` for a verdict.
-
-**Windows.** Needs Windows PowerShell 5.1, which ships with Windows 10 and 11.
-
-```powershell
-irm https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.ps1 | iex
-```
-
-A script piped into `iex` cannot take parameters, so set a variable first:
-
-```powershell
-$WmPath = 'C:\src\myrepo'; irm <same url> | iex
-```
-
-**Linux and macOS.** Uses ripgrep, or falls back to `grep -P`.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/norandom/watermarks-remover/main/scripts/detect.sh | bash
-```
-
-Read anything you pipe into a shell, these included. Both only read files.
-Neither writes, deletes, or connects anywhere.
-
-## What a result means
-
-- **A positive is strong.** Text does not grow byte-aligned runs of invisible
-  characters between Latin letters by itself.
-- **A negative proves nothing.** A statistical watermark leaves no trace in the
-  characters, so an AI-written file is expected to scan clean.
-
-Why the tool prints no "% AI" number, and what to say about a repository that is
-AI-written and scans clean:
-[What a result means](https://norandom.github.io/watermarks-remover/experiment/what-it-means/).
-
-## More in the docs
+## Everything else
 
 | Question | Page |
 | --- | --- |
-| Which invisible characters exist, and when is each one legitimate? | [Invisible characters](https://norandom.github.io/watermarks-remover/reference/characters/) |
-| What does the tool damage when it rewrites files? | [What breaks](https://norandom.github.io/watermarks-remover/reference/breakage/) |
-| What does a cleaned file look like next to the original? | [Before and after](https://norandom.github.io/watermarks-remover/reference/examples/) |
-| Why only characters, and not word choice or metadata? | [The three channels](https://norandom.github.io/watermarks-remover/experiment/what-it-means/) |
+| What does a positive or a clean result prove? | [What a result means](https://norandom.github.io/watermarks-remover/experiment/what-it-means/) |
+| What was actually found in real repositories? | [Results](https://norandom.github.io/watermarks-remover/experiment/baseline/) |
+| How is a verdict decided? | [Detect carriers](https://norandom.github.io/watermarks-remover/usage/detect/) |
+| Can I sign my own text? | [Sign your own text](https://norandom.github.io/watermarks-remover/usage/signing/) |
+| What does the cleaner break? | [What breaks](https://norandom.github.io/watermarks-remover/reference/breakage/) |
 
-## Status
-
-- Pre-release. v0.1.0a2 is a GitHub pre-release, with a wheel and an sdist
-  attached. Development follows the specifications in `.kiro/`.
-- The rewriting hook has defects that damage correct text: Devanagari spelling,
-  CJK typography and some YAML files. Every defect we reproduced is listed with
-  its fix status in
-  [What breaks](https://norandom.github.io/watermarks-remover/reference/breakage/).
-- `--detect` and `--check` never write, so those defects cannot reach your files.
-- On one real repository the rewrite removed zero watermarks, corrupted one
-  third-party library, and churned six files that were already clean.
-
-## Provenance
+## Provenance and licence
 
 A fork, not a vendored dependency. The cleaning code in `src/wm_hook/core/`
-started as a copy of
+began as a copy of
 [`guillaumemeyer/watermarks-remover`](https://github.com/guillaumemeyer/watermarks-remover)
-and has been edited freely since. Origin commits are recorded in
-[NOTICE](NOTICE).
+and has been edited freely since. Origin commits are in [NOTICE](NOTICE).
 
-## Licence
-
-MIT. See [LICENSE](LICENSE). Provided without warranty of any kind.
-
-Code inherited from upstream carries upstream's licensing.
+MIT, see [LICENSE](LICENSE). Provided without warranty of any kind. Code
+inherited from upstream carries upstream's licensing.
