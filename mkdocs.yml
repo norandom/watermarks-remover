@@ -54,6 +54,7 @@ nav:
       - What breaks: reference/breakage.md
   - Using it:
       - The hook: usage/hook.md
+      - Is a carrier present?: usage/detect.md
       - The survey: usage/survey.md
   - Limits and disclaimer: disclaimer.md
 

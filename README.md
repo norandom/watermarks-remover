@@ -138,6 +138,68 @@ rather than a general detector. Nothing here invokes it.
 
 ---
 
+## Can you tell whether an AI wrote this?
+
+No. But you can tell whether **something deliberately hid data in it**, and
+that question is decidable. `wm-hook --detect` answers it, and the answer is
+deliberately one-sided:
+
+```console
+$ wm-hook --detect release.md notes.md
+CARRIER! release.md: covert carrier present, and it decodes
+         + tag_outside_flag (+3): 30 tag character(s) outside a subdivision flag sequence
+         > unicode tag block @33 [confirmed]
+           'gen=claude-opus-4;run=8f31c2a0'
+           identifies: 8f31c2a0, claude, gen=
+CARRIER! notes.md: covert carrier present -- something embedded hidden data
+         + binary_alphabet (+3): run of 32 uses exactly two codepoints (U+200B U+200C)
+```
+
+| | |
+| --- | --- |
+| **A positive is strong** | Text does not grow byte-aligned runs of zero-width characters between Latin letters by itself. |
+| **A negative proves nothing** | A statistical watermark leaves no codepoint trace, so an AI-written file is *expected* to scan clean. |
+
+Measured on the corpus below: **0 false positives in 1,155 files**, bounding
+the per-file rate at 0.26% (rule of three, 95%). The same corpus puts
+sensitivity to AI *authorship* at approximately zero — two of those
+repositories were written almost entirely by coding agents and both scan clean.
+
+**Specific, not sensitive.** No "% AI" number is produced, because collapsing
+those two measurements into one would be the central dishonesty this project
+exists to avoid.
+
+Presence is not the test; **structure** is. Runs, two-codepoint alphabets,
+byte-aligned lengths, placement between ASCII letters and even spacing each
+carry a weight, and every weight that fired is printed with the verdict. Below
+the threshold a residual is reported as an `anomaly`, not a finding — which is
+what keeps stray BOMs and copy-paste debris out of the results.
+
+### "But this repo is AI-written and scans clean"
+
+The sharpest objection to the whole result. It assumes an unstated premise —
+*AI writing contains a carrier* — which is the claim under test; granting it
+makes the experiment unfalsifiable. Three measurements separate "nothing is
+there" from "we cannot see it":
+
+1. **No material to hide in.** 604,030 characters of agent-written text here,
+   0.17% non-ASCII, and the entire invisible inventory is ~40 characters that
+   are the detector's own documented examples. The most common non-ASCII
+   character is the em dash.
+2. **The same files light up when a carrier is injected.** A tag block, a
+   zero-width bit stream and a private-use run each flip agent-written source
+   from `none` to `carrier`. Enforced in `tests/test_verdict.py`, so the
+   argument is executable rather than asserted.
+3. **Recall is 21/21** against published techniques.
+
+AI use of this repo *is* detectable at 100% — through `.claude/`, `CLAUDE.md`
+and commit trailers. The marking simply is not where a codepoint scan looks.
+
+Details, worked examples and the full false-positive table:
+[Is a carrier present?](docs/usage/detect.md)
+
+---
+
 ## Usage
 
 ### Survey a tree
@@ -167,6 +229,10 @@ repos:
       - id: wm-hook-check        # manual stage, reports only
 ```
 
+`wm-hook --detect` is the third mode: it never writes, and it exits 1 only when
+a covert carrier is *established*, not merely when an invisible character is
+present. That makes it the one suitable for a CI gate.
+
 Run `pre-commit run --all-files` once and read the diff before trusting it.
 Place it after anything that writes text and before anything that formats it.
 
@@ -188,12 +254,14 @@ is in [What we measured](docs/experiment/baseline.md).
 
 ## Provenance
 
-The cleaning logic is vendored byte-exact from
-[`guillaumemeyer/watermarks-remover`](https://github.com/guillaumemeyer/watermarks-remover),
-pinned by commit SHA with a SHA-256 per file in `_vendor/VENDORED.json`. Never
-edit `_vendor/` in place; use `refresh.sh`.
+A fork, not a vendored dependency. The cleaning logic in `src/wm_hook/core/`
+started as a copy of
+[`guillaumemeyer/watermarks-remover`](https://github.com/guillaumemeyer/watermarks-remover)
+and has since been edited freely — the flag-tag bound, the
+`Default_Ignorable_Code_Point` rule and the detection layer are all divergence
+from upstream. Origin commits are recorded in [NOTICE](NOTICE).
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Provided without warranty of any kind. The
-vendored files carry upstream's licensing.
+MIT. See [LICENSE](LICENSE). Provided without warranty of any kind. Code
+inherited from upstream carries upstream's licensing.

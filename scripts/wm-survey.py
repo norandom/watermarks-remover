@@ -40,8 +40,10 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from payload import carrier_signature, extract  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from wm_hook.carriers import carrier_class, explain  # noqa: E402
+from wm_hook.payload import carrier_signature, extract  # noqa: E402
+from wm_hook.verdict import LEVEL_ORDER, classify  # noqa: E402
 
 TEXT_EXTS = {
     ".md", ".markdown", ".mdx", ".qmd", ".rmd", ".txt", ".rst", ".tex",
@@ -73,125 +75,6 @@ COMMIT_TRAILERS: dict[str, re.Pattern[str]] = {
     "cursor":  re.compile(r"Co-Authored-By:\s*Cursor", re.I),
 }
 
-ZERO_WIDTH = {0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF}
-BIDI = {0x200E, 0x200F, 0x061C, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E,
-        0x2066, 0x2067, 0x2068, 0x2069}
-SPACE_HOMOGLYPHS = {0x00A0, 0x1680, 0x202F, 0x205F, 0x3000} | set(range(0x2000, 0x200B))
-
-# Scripts in which a zero-width joiner or non-joiner is orthography, not payload.
-JOINING_RANGES = (
-    (0x0600, 0x08FF), (0x0900, 0x0DFF), (0x0F00, 0x109F),
-    (0x1780, 0x17FF), (0x1800, 0x18AF),
-)
-# Scripts that use U+200B as a word or line-break separator.
-ZWSP_SEPARATOR_RANGES = ((0x0E00, 0x0E7F), (0x0E80, 0x0EFF),
-                         (0x1780, 0x17FF), (0x1000, 0x109F))
-
-
-def carrier_class(cp: int) -> str | None:
-    if 0xE000 <= cp <= 0xF8FF or 0xF0000 <= cp <= 0xFFFFD or 0x100000 <= cp <= 0x10FFFD:
-        return "private_use"
-    if 0xE0000 <= cp <= 0xE007F:
-        return "tag_chars"
-    if 0xFE00 <= cp <= 0xFE0F or 0xE0100 <= cp <= 0xE01EF:
-        return "variation_selector"
-    if cp in ZERO_WIDTH:
-        return "zero_width"
-    if cp in BIDI:
-        return "bidi"
-    if cp in SPACE_HOMOGLYPHS:
-        return "space_homoglyph"
-    if unicodedata.category(chr(cp)) == "Cf":
-        return "other_format"
-    return None
-
-
-def _in(cp: int, ranges) -> bool:
-    return any(lo <= cp <= hi for lo, hi in ranges)
-
-
-# Emoji bases outside the Symbol categories. These five are exactly the ones
-# the cleaner's own base table omits, and the survey prototype inherited the
-# same gap -- it reported three of them in design.md as watermark candidates.
-_EXTRA_EMOJI_BASES = {
-    0x2139,  # information source
-    0x203C,  # double exclamation mark
-    0x2049,  # exclamation question mark
-    0x2934,  # right arrow curving up
-    0x2935,  # right arrow curving down
-    0x00A9, 0x00AE, 0x2122,  # copyright, registered, trade mark
-    0x3030, 0x303D, 0x3297, 0x3299,
-}
-
-
-def _is_symbolish(ch: str) -> bool:
-    cp = ord(ch)
-    return (
-        unicodedata.category(ch) in ("So", "Sk", "Sm")
-        or 0x1F000 <= cp <= 0x1FAFF
-        or cp in _EXTRA_EMOJI_BASES
-    )
-
-
-def _preceding_base(text: str, i: int) -> str:
-    """The nearest preceding character that is not itself a carrier.
-
-    A backward look that stops at text[i-1] fails on any chained sequence: in
-    the emoji U+2764 U+FE0F U+200D U+1F525, the character before the joiner is
-    a variation selector, not the heart. Skipping carriers is what lets the
-    joiner be recognised as emoji glue rather than a payload.
-    """
-    j = i - 1
-    while j >= 0 and carrier_class(ord(text[j])) in (
-        "variation_selector", "zero_width", "tag_chars",
-    ):
-        j -= 1
-    return text[j] if j >= 0 else ""
-
-
-def _following_base(text: str, i: int) -> str:
-    j = i + 1
-    while j < len(text) and carrier_class(ord(text[j])) in (
-        "variation_selector", "zero_width", "tag_chars",
-    ):
-        j += 1
-    return text[j] if j < len(text) else ""
-
-
-def explain(text: str, i: int) -> str | None:
-    """Why this carrier is legitimate, or None if it is unexplained."""
-    cp = ord(text[i])
-    prev = _preceding_base(text, i)
-    nxt = _following_base(text, i)
-    kind = carrier_class(cp)
-
-    if kind == "variation_selector":
-        if prev and _is_symbolish(prev):
-            return "emoji or symbol presentation selector"
-        if prev and (0x3400 <= ord(prev) <= 0x9FFF or 0xF900 <= ord(prev) <= 0xFAFF):
-            return "ideographic variation sequence"
-    if cp in (0x200C, 0x200D):
-        if prev and nxt and _in(ord(prev), JOINING_RANGES) and _in(ord(nxt), JOINING_RANGES):
-            return "script joiner between same-script letters"
-        if prev and _in(ord(prev), JOINING_RANGES):
-            return "script joiner at a word boundary (word-final virama etc.)"
-        if cp == 0x200D and prev and nxt and _is_symbolish(prev) and _is_symbolish(nxt):
-            return "emoji zero-width joiner sequence"
-    if cp == 0x200B and prev and _in(ord(prev), ZWSP_SEPARATOR_RANGES):
-        return "word separator in a script without spaces"
-    if cp == 0xFEFF and i == 0:
-        return "byte-order mark at offset zero"
-    if kind == "space_homoglyph":
-        if cp == 0x3000 and prev and 0x2E80 <= ord(prev) <= 0x9FFF:
-            return "ideographic space in CJK text"
-        return "typographic space (no-break, narrow, thin)"
-    if kind == "tag_chars" and 0xE0020 <= cp <= 0xE007F:
-        window = text[max(0, i - 8):i]
-        if "\U0001F3F4" in window:
-            return "subdivision flag tag sequence"
-    if kind == "bidi" and cp in (0x200E, 0x200F, 0x061C):
-        return "directional mark in mixed-direction text"
-    return None
 
 
 @dataclass
@@ -203,6 +86,7 @@ class FileResult:
     unexplained_detail: list = field(default_factory=list)
     payloads: list = field(default_factory=list)
     signature: dict = field(default_factory=dict)
+    verdict: dict = field(default_factory=dict)
 
     @property
     def unexplained(self) -> int:
@@ -220,6 +104,7 @@ def scan_file(path: Path, root: Path) -> FileResult | None:
     res = FileResult(path=str(path.relative_to(root)).replace("\\", "/"))
     res.payloads = [p.to_dict() for p in extract(text)]
     res.signature = carrier_signature(text)
+    res.verdict = classify(text).to_dict()
     for i, ch in enumerate(text):
         kind = carrier_class(ord(ch))
         if not kind:
@@ -260,6 +145,21 @@ CHANNELS = {
         "blind_to": "anything not encoded in the choice of codepoint",
         "applicable_when": "always; every file is scannable",
         "status": "operational",
+    },
+    "carrier_verdict": {
+        "name": "Carrier verdict - is hidden data deliberately embedded?",
+        "detects": "unexplained carriers with the structure of data: contiguous "
+                   "runs, two-codepoint alphabets, byte-aligned lengths, "
+                   "placement between ASCII letters, even spacing",
+        "blind_to": "anything that leaves no codepoint trace, and any carrier "
+                    "short and isolated enough to be indistinguishable from "
+                    "copy-paste debris",
+        "applicable_when": "always, but the answer is one-sided",
+        "status": "operational",
+        "why": "This is the tractable question. A positive establishes "
+               "deliberate embedding by something; it never identifies what. "
+               "A negative establishes nothing about authorship, because a "
+               "statistical watermark leaves no codepoint trace at all.",
     },
     "payload": {
         "name": "Payload decoding - what a carrier actually says",
@@ -316,6 +216,7 @@ def applicability(rep: dict) -> dict:
     scanned = rep["files_scanned"]
     channels = {k: dict(v) for k, v in CHANNELS.items()}
     channels["layer_a"]["files_covered"] = scanned
+    channels["carrier_verdict"]["files_covered"] = scanned
     channels["payload"]["files_covered"] = len(rep.get("payloads", []))
     channels["metadata"]["files_covered"] = 0
     channels["statistical"]["files_covered"] = 0
@@ -421,7 +322,38 @@ def survey(root: Path, exclude: tuple[str, ...] = ()) -> dict:
             sum((collections.Counter(f.signature) for f in files),
                 collections.Counter()).most_common()
         ),
+        "verdicts": verdict_summary(files),
         "attribution": attribute(root),
+    }
+
+
+def verdict_summary(files: list[FileResult]) -> dict:
+    """The one question this project can answer: is a covert carrier present?
+
+    Reported as a count per level rather than as a single percentage, because
+    a percentage would invite reading it as "% AI", which it is not. The
+    ``carrier_present`` count is the only number here that establishes
+    anything, and it establishes deliberate embedding -- not authorship.
+    """
+    levels = collections.Counter(f.verdict.get("level", "none") for f in files)
+    positives = [f for f in files if f.verdict.get("carrier_present")]
+    return {
+        "by_level": {lv: levels.get(lv, 0) for lv in LEVEL_ORDER},
+        "carrier_present": len(positives),
+        "files": [
+            {"path": f.path,
+             "level": f.verdict["level"],
+             "confidence": f.verdict["confidence"],
+             "evidence": [e["name"] for e in f.verdict["evidence"]],
+             "bits": f.verdict["bits_available"]}
+            for f in sorted(positives, key=lambda x: -x.verdict["score"])[:20]
+        ],
+        "one_sided": (
+            "A positive establishes that something deliberately embedded hidden "
+            "data. A negative establishes nothing about authorship: a "
+            "statistical watermark leaves no codepoint trace, so an AI-written "
+            "file is expected to score zero here."
+        ),
     }
 
 
@@ -456,6 +388,18 @@ def render(rep: dict) -> None:
                 print(f"        {p['decoded']!r}")
                 if p["identifiers"]:
                     print(f"        identifies: {', '.join(p['identifiers'])}")
+
+    vs = rep.get("verdicts")
+    if vs:
+        print("\n  COVERT CARRIER PRESENT?")
+        for lv, n in vs["by_level"].items():
+            if n:
+                print(f"    {lv:<22} {n} file(s)")
+        print(f"    -> established in           {vs['carrier_present']} file(s)")
+        for f in vs["files"]:
+            print(f"       {f['path']}  [{f['level']}/{f['confidence']}] "
+                  f"{', '.join(f['evidence'])}  {f['bits']} bits")
+        print(f"    {vs['one_sided']}")
 
     if rep.get("carrier_signature"):
         print("\n  carrier signature (classes a producer reached for):")

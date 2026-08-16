@@ -50,6 +50,7 @@ commit-time hook.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from importlib import metadata
 from pathlib import Path
@@ -58,6 +59,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "core"))
 
 from common import MAX_INPUT_BYTES, eprint, looks_binary, safe_write_text  # noqa: E402
 from text_unicode import clean_text  # noqa: E402
+
+from wm_hook import verdict as _verdict  # noqa: E402
 
 
 def _version() -> str:
@@ -104,10 +107,67 @@ def clean_one(path: Path, *, check: bool) -> tuple[str, str]:
     return "changed", f"cleaned ({detail})"
 
 
+def read_text(path: Path) -> tuple[str | None, str]:
+    """Decoded text, or (None, reason)."""
+    try:
+        if path.stat().st_size > MAX_INPUT_BYTES:
+            return None, f"refusing input larger than {MAX_INPUT_BYTES} bytes"
+        data = path.read_bytes()
+    except OSError as e:
+        return None, f"cannot read: {e}"
+    binary = looks_binary(data)
+    if binary is not None:
+        return None, f"looks like {binary} — not scanned"
+    return data.decode("utf-8", errors="surrogateescape"), ""
+
+
+def detect(paths: list[Path], *, as_json: bool, verbose: bool) -> int:
+    """Report whether a covert carrier is present. Exit 1 if any is.
+
+    This is a one-sided test and the output says so on every run. A positive
+    establishes that something embedded hidden data; a negative establishes
+    nothing about whether a human wrote the text.
+    """
+    results, hits, errors = [], 0, 0
+    lines: list[str] = []
+    for path in paths:
+        text, why = read_text(path)
+        if text is None:
+            errors += 1
+            lines.append(f"ERROR    {path}: {why}")
+            results.append({"path": str(path), "error": why})
+            continue
+        v = _verdict.classify(text)
+        if v.carrier_present:
+            hits += 1
+        results.append({"path": str(path), **v.to_dict()})
+        if v.level != _verdict.NONE or verbose:
+            lines.extend(_verdict.render(str(path), v, verbose=verbose))
+
+    if as_json:
+        json.dump(results, sys.stdout, indent=2, ensure_ascii=False)
+        sys.stdout.write("\n")
+    else:
+        for line in lines:
+            print(line)
+        scanned = len(paths) - errors
+        print(f"\n{hits} of {scanned} file(s) carry a covert carrier.")
+        if not hits:
+            print(
+                "A clean result is not evidence of human authorship. Statistical\n"
+                "watermarks leave no codepoint trace and are invisible to this test."
+            )
+
+    if errors:
+        return 2
+    return 1 if hits else 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
-        epilog="exit: 0 = all clean, 1 = files were (or would be) modified, 2 = errors",
+        epilog="exit: 0 = all clean, 1 = files were (or would be) modified, 2 = errors. "
+               "With --detect, 1 means a covert carrier was found.",
     )
     p.add_argument("paths", nargs="+", type=Path, help="files to clean in place")
     p.add_argument(
@@ -115,8 +175,21 @@ def main() -> int:
         action="store_true",
         help="do not write; exit 1 if any file would change",
     )
+    p.add_argument(
+        "--detect",
+        action="store_true",
+        help="do not write; report whether a covert carrier is present and why. "
+             "Answers 'did something embed hidden data here', never 'was this "
+             "written by an AI' — the second needs a key nobody has published.",
+    )
+    p.add_argument("--json", action="store_true", help="machine-readable --detect output")
+    p.add_argument("-v", "--verbose", action="store_true",
+                   help="with --detect, report clean files too")
     p.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
     args = p.parse_args()
+
+    if args.detect:
+        return detect(args.paths, as_json=args.json, verbose=args.verbose)
 
     changed = 0
     errors = 0

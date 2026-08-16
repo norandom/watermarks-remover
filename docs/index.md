@@ -83,6 +83,34 @@ That has no place in a commit hook.
 
     Nothing in this repository invokes it.
 
+## Can you tell whether an AI wrote it?
+
+No — and the honest version of that answer is more useful than the question.
+What *is* decidable is whether something deliberately hid data in the text, and
+`wm-hook --detect` decides it.
+
+!!! success "A positive is strong"
+
+    Text does not spontaneously grow byte-aligned runs of zero-width characters
+    between Latin letters. When the detector fires, something embedded hidden
+    data on purpose. **0 false positives in 1,155 files**, which bounds the
+    per-file rate at 0.26% with 95% confidence.
+
+!!! danger "A negative proves nothing about authorship"
+
+    A Channel B watermark leaves no codepoint trace at all, so an AI-written
+    file is *expected* to scan clean. Two repositories in that corpus were
+    written almost entirely by coding agents. Both scan clean.
+
+Specific, not sensitive. The tool therefore refuses to print a "% AI" number:
+collapsing a strong positive and a worthless negative into one figure is
+precisely the error the carriers / explained / unexplained split exists to
+prevent.
+
+Presence is not the test — **structure** is. See
+[Is a carrier present?](usage/detect.md) for the weights, the verdict levels
+and the measured false-positive table.
+
 ## Where it stands
 
 Measured against a catalogue of 24 published carrier techniques:
